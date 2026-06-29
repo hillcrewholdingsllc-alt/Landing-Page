@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sell Your House Fast in Greenville, NC | K Real Estate</title>
+  <meta name="description" content="We buy houses in Greenville and Pitt County, NC — any condition, any situation. No repairs, no fees, no hassle. Get a fair cash offer today." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:   #0D1B2A;
+      --slate:  #1C2E40;
+      --cream:  #F0EBE1;
+      --gold:   #C9A84C;
+      --muted:  #8A9BB0;
+      --white:  #FFFFFF;
+      --error:  #E05252;
+      --success:#4CAF84;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--navy);
+      color: var(--cream);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(13,27,42,0.95), transparent);
+    }
+
+    .nav-logo {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .nav-phone {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--cream);
+      text-decoration: none;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+    .nav-phone:hover { opacity: 1; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 120px 40px 80px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 28px;
+    }
+
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(42px, 7vw, 80px);
+      line-height: 1.1;
+      color: var(--white);
+      margin-bottom: 32px;
+    }
+
+    .hero h1 em {
+      font-style: normal;
+      color: var(--gold);
+    }
+
+    .hero-sub {
+      font-size: clamp(16px, 2.2vw, 20px);
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+    }
+
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: inline-block;
+      background: var(--gold);
+      color: var(--navy);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 0.04em;
+      text-decoration: none;
+      padding: 16px 36px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover {
+      background: #dbb95a;
+      transform: translateY(-1px);
+    }
+
+    .hero-alt {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .hero-alt a {
+      color: var(--cream);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* ── TRUST BAR ── */
+    .trust-bar {
+      border-top: 1px solid rgba(255,255,255,0.07);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      padding: 40px;
+    }
+
+    .trust-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+    }
+
+    .trust-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .trust-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .trust-value {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: clamp(24px, 3.5vw, 36px);
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .trust-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how {
+      padding: 96px 40px;
+      background: var(--slate);
+    }
+
+    .section-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 20px;
+    }
+
+    .section-heading {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: clamp(28px, 4vw, 44px);
+      color: var(--white);
+      line-height: 1.2;
+      margin-bottom: 56px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 48px;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-num {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 48px;
+      color: rgba(201, 168, 76, 0.25);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .step h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--white);
+    }
+
+    .step p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── SITUATIONS ── */
+    .situations {
+      padding: 96px 40px;
+    }
+
+    .sit-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2px;
+      margin-top: 56px;
+    }
+
+    .sit-item {
+      background: var(--slate);
+      padding: 28px 32px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      transition: background 0.2s;
+    }
+    .sit-item:hover { background: #253547; }
+
+    .sit-check {
+      color: var(--gold);
+      font-size: 18px;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .sit-text {
+      font-size: 15px;
+      color: var(--cream);
+      line-height: 1.5;
+    }
+
+    /* ── FORM ── */
+    .form-section {
+      padding: 96px 40px;
+      background: var(--slate);
+      scroll-margin-top: 80px;
+    }
+
+    .form-section .section-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+
+    .form-left h2 {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(28px, 3.5vw, 42px);
+      color: var(--white);
+      line-height: 1.25;
+      margin-bottom: 20px;
+    }
+
+    .form-left p {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-bottom: 32px;
+    }
+
+    .form-contact {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .form-contact a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--cream);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+    .form-contact a:hover { opacity: 1; }
+
+    .form-contact-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(201, 168, 76, 0.12);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input, select, textarea {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: rgba(255,255,255,0.2);
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238A9BB0' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    select option {
+      background: var(--navy);
+      color: var(--white);
+    }
+
+    textarea { resize: vertical; min-height: 100px; }
+
+    .form-submit {
+      width: 100%;
+      background: var(--gold);
+      color: var(--navy);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: 0.05em;
+      padding: 18px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.15s;
+      margin-top: 8px;
+    }
+    .form-submit:hover {
+      background: #dbb95a;
+      transform: translateY(-1px);
+    }
+    .form-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .form-note {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .form-success {
+      display: none;
+      text-align: center;
+      padding: 48px 32px;
+    }
+
+    .form-success-icon {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+
+    .form-success h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      color: var(--white);
+      margin-bottom: 12px;
+    }
+
+    .form-success p {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .form-error-msg {
+      display: none;
+      background: rgba(224, 82, 82, 0.12);
+      border: 1px solid rgba(224, 82, 82, 0.3);
+      color: #f08080;
+      font-size: 13px;
+      padding: 12px 16px;
+      line-height: 1.5;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      padding: 64px 40px;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .footer-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 24px;
+    }
+
+    .footer-logo {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-size: 13px;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--cream); }
+
+    .footer-legal {
+      width: 100%;
+      font-size: 12px;
+      color: rgba(138, 155, 176, 0.5);
+      line-height: 1.6;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 20px; }
+
+      .hero { padding: 100px 20px 60px; }
+
+      .trust-bar { padding: 40px 20px; }
+      .trust-inner { grid-template-columns: 1fr; gap: 32px; }
+
+      .how, .situations, .form-section { padding: 64px 20px; }
+
+      .steps { grid-template-columns: 1fr; gap: 40px; }
+
+      .sit-grid { grid-template-columns: 1fr; }
+
+      .form-section .section-inner {
+        grid-template-columns: 1fr;
+        gap: 48px;
+      }
+
+      .form-row { grid-template-columns: 1fr; }
+
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <span class="nav-logo">K Real Estate &amp; Investment</span>
+    <a href="tel:+12523593197" class="nav-phone">(252) 359-3197</a>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <p class="hero-eyebrow">Greenville &amp; Pitt County, NC</p>
+    <h1>Thinking about selling<br>your property — <em>as is?</em></h1>
+    <p class="hero-sub">
+      We buy houses directly from homeowners in Greenville and Pitt County.
+      No repairs, no agent fees, no waiting. Just a fair offer and a closing date that works for you.
+    </p>
+    <div class="hero-cta">
+      <a href="#get-offer" class="btn-primary">Get a Cash Offer</a>
+      <span class="hero-alt">or call us at <a href="tel:+12523593197">(252) 359-3197</a></span>
+    </div>
+  </section>
+
+  <!-- TRUST BAR -->
+  <div class="trust-bar">
+    <div class="trust-inner">
+      <div class="trust-item">
+        <span class="trust-label">Based in</span>
+        <span class="trust-value">Greenville</span>
+        <span class="trust-desc">Local buyers who know Pitt County — not an out-of-state call center.</span>
+      </div>
+      <div class="trust-item">
+        <span class="trust-label">Close in as little as</span>
+        <span class="trust-value">14 Days</span>
+        <span class="trust-desc">We work on your timeline. Need more time? We can do that too.</span>
+      </div>
+      <div class="trust-item">
+        <span class="trust-label">Agent fees</span>
+        <span class="trust-value">Zero</span>
+        <span class="trust-desc">No commissions, no closing costs on your end. The offer is what you get.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <section class="how">
+    <div class="section-inner">
+      <p class="section-label">The Process</p>
+      <h2 class="section-heading">Three steps from today<br>to closing day.</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Tell us about your property</h3>
+          <p>Fill out the short form below or give us a call. Takes about two minutes.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Get a fair cash offer</h3>
+          <p>We review your property and present a no-obligation offer — usually within 24 hours.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Close on your schedule</h3>
+          <p>Pick your closing date. We handle the paperwork. You walk away with cash in hand.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SITUATIONS -->
+  <section class="situations">
+    <div class="section-inner">
+      <p class="section-label">We Can Help With</p>
+      <h2 class="section-heading">Whatever the situation is,<br>we've seen it before.</h2>
+      <div class="sit-grid">
+        <div class="sit-item">
+          <span class="sit-check">&#10003;</span>
+          <span class="sit-text">Facing foreclosure or behind on payments</span>
+        </div>
+        <div class="sit-item">
+          <span class="sit-check">&#10003;</span>
+          <span class="sit-text">Property with code violations or city notices</span>
+        </div>
+        <div class="sit-item">
+          <span class="sit-check">&#10003;</span>
+          <span class="sit-text">Inherited property you don't want to manage</span>
+        </div>
+        <div class="sit-item">
+          <span class="sit-check">&#10003;</span>
+          <span class="sit-text">Vacant or rental property that's become a burden</span>
+        </div>
+        <div class="sit-item">
+          <span class="sit-check">&#10003;</span>
+          <span class="sit-text">Relocating and need to sell quickly</span>
+        </div>
+        <div class="sit-item">
+          <span class="sit-check">&#10003;</span>
+          <span class="sit-text">Property that needs major repairs</span>
+        </div>
+        <div class="sit-item">
+          <span class="sit-check">&#10003;</span>
+          <span class="sit-text">Divorce or other life changes requiring a fast sale</span>
+        </div>
+        <div class="sit-item">
+          <span class="sit-check">&#10003;</span>
+          <span class="sit-text">Tired of being a landlord</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORM -->
+  <section class="form-section" id="get-offer">
+    <div class="section-inner">
+
+      <div class="form-left">
+        <h2>Ready to see what your property is worth?</h2>
+        <p>
+          Fill out the form and someone from our team will reach out within a few hours.
+          No pressure, no obligation — just a straight answer.
+        </p>
+        <div class="form-contact">
+          <a href="tel:+12523593197">
+            <span class="form-contact-icon">&#9742;</span>
+            (252) 359-3197
+          </a>
+          <a href="mailto:k@kbuyhouses.com">
+            <span class="form-contact-icon">&#9993;</span>
+            k@kbuyhouses.com
+          </a>
+        </div>
+      </div>
+
+      <div class="form-right">
+        <div class="form-error-msg" id="formError">
+          Something went wrong. Please try again or call us directly at (252) 359-3197.
+        </div>
+
+        <form id="leadForm">
+          <div class="form-row">
+            <div class="field">
+              <label for="firstName">First Name</label>
+              <input type="text" id="firstName" name="firstName" placeholder="John" required />
+            </div>
+            <div class="field">
+              <label for="lastName">Last Name</label>
+              <input type="text" id="lastName" name="lastName" placeholder="Smith" required />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" name="phone" placeholder="(252) 555-0100" required />
+          </div>
+
+          <div class="field">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="john@email.com" />
+          </div>
+
+          <div class="field">
+            <label for="address">Property Address</label>
+            <input type="text" id="address" name="address" placeholder="123 Main St, Greenville, NC" required />
+          </div>
+
+          <div class="field">
+            <label for="situation">What best describes your situation?</label>
+            <select id="situation" name="situation" required>
+              <option value="" disabled selected>Select one</option>
+              <option value="Foreclosure or behind on payments">Foreclosure or behind on payments</option>
+              <option value="Code violations or city notices">Code violations or city notices</option>
+              <option value="Inherited property">Inherited property</option>
+              <option value="Vacant or rental property">Vacant or rental property</option>
+              <option value="Relocating and need to sell fast">Relocating and need to sell fast</option>
+              <option value="Property needs major repairs">Property needs major repairs</option>
+              <option value="Divorce or life change">Divorce or life change</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="notes">Anything else you want us to know? <span style="opacity:0.5; font-weight:400;">(optional)</span></label>
+            <textarea id="notes" name="notes" placeholder="Timeline, condition of the property, questions..."></textarea>
+          </div>
+
+          <button type="submit" class="form-submit" id="submitBtn">
+            Get My Cash Offer
+          </button>
+
+          <p class="form-note">
+            We respect your privacy. Your information is never shared or sold.
+          </p>
+        </form>
+
+        <div class="form-success" id="formSuccess">
+          <div class="form-success-icon">&#10003;</div>
+          <h3>We got your info.</h3>
+          <p>
+            Someone from K Real Estate will reach out within a few hours.
+            If you need to talk sooner, call or text us at
+            <a href="tel:+12523593197" style="color: var(--gold);">(252) 359-3197</a>.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-inner">
+      <span class="footer-logo">K Real Estate &amp; Investment LLC</span>
+      <ul class="footer-links">
+        <li><a href="tel:+12523593197">(252) 359-3197</a></li>
+        <li><a href="mailto:k@kbuyhouses.com">k@kbuyhouses.com</a></li>
+        <li><a href="#get-offer">Get an Offer</a></li>
+      </ul>
+    </div>
+    <div class="footer-inner">
+      <p class="footer-legal">
+        K Real Estate &amp; Investment LLC &mdash; Greenville, NC 27858.
+        We are real estate investors and purchase properties directly from homeowners.
+        We are not a licensed real estate brokerage. All offers are non-binding until executed in writing.
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // ── FORM SUBMISSION ──
+    // Replace the webhook URL below with your n8n webhook endpoint.
+    // The payload is structured to match your Notion lead creation schema.
+    const N8N_WEBHOOK = 'https://addisonai.app.n8n.cloud/webhook/ppc-lead';
+
+    const form = document.getElementById('leadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const formSuccess = document.getElementById('formSuccess');
+    const formError = document.getElementById('formError');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
+      formError.style.display = 'none';
+
+      const data = {
+        firstName:    document.getElementById('firstName').value.trim(),
+        lastName:     document.getElementById('lastName').value.trim(),
+        phone:        document.getElementById('phone').value.trim().replace(/\D/g, '').slice(-10),
+        email:        document.getElementById('email').value.trim(),
+        address:      document.getElementById('address').value.trim(),
+        situation:    document.getElementById('situation').value,
+        notes:        document.getElementById('notes').value.trim(),
+        source:       'Google PPC',
+        submittedAt:  new Date().toISOString(),
+        pageUrl:      window.location.href
+      };
+
+      try {
+        const res = await fetch(N8N_WEBHOOK, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (res.ok) {
+          form.style.display = 'none';
+          formSuccess.style.display = 'block';
+          // Fire Google Ads conversion if tag is present
+          if (typeof gtag !== 'undefined') {
+            gtag('event', 'conversion', { send_to: 'AW-CONVERSION_ID/CONVERSION_LABEL' });
+          }
+        } else {
+          throw new Error('Non-200 response');
+        }
+      } catch (err) {
+        formError.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Get My Cash Offer';
+      }
+    });
+
+    // ── SMOOTH SCROLL OFFSET ──
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
