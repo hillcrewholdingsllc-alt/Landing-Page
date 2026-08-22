@@ -12,7 +12,7 @@
     return {
       page_path: location.pathname,
       page_title: document.title,
-      page_location: location.href.split('#')[0]
+      page_location: location.origin + location.pathname
     };
   }
   function track(name, params){
@@ -22,7 +22,59 @@
       window.gtag('event', name, payload);
     }
   }
-  window.kreiTrack = track;
+  window.kreiGetAnalyticsIdentity = function(timeoutMs){
+    timeoutMs = Math.max(250, Math.min(2000, Number(timeoutMs || 900)));
+    return new Promise(function(resolve){
+      var done=false, result={gaClientId:'',gaSessionId:''}, pending=2;
+      function finish(){
+        if(done) return;
+        done=true;
+        resolve(result);
+      }
+      function setField(field, value){
+        result[field]=cleanText(value,120);
+        pending-=1;
+        if(pending<=0) finish();
+      }
+      setTimeout(finish, timeoutMs);
+      if(!GA4_ID || typeof window.gtag!=='function') return;
+      try{ window.gtag('get', GA4_ID, 'client_id', function(v){ setField('gaClientId',v); }); }catch(_e){ setField('gaClientId',''); }
+      try{ window.gtag('get', GA4_ID, 'session_id', function(v){ setField('gaSessionId',v); }); }catch(_e){ setField('gaSessionId',''); }
+    });
+  };
+
+  window.kreiTrack = function(name, params){
+    var p = Object.assign({}, params || {});
+    if(name === 'generate_lead' && !p.submission_id && window.__kreiLastSubmissionId){
+      p.submission_id = cleanText(window.__kreiLastSubmissionId,120);
+    }
+    track(name, p);
+  };
+
+  if(typeof window.fetch === 'function'){
+    var nativeFetch = window.fetch.bind(window);
+    window.fetch = async function(input, init){
+      try{
+        var url = typeof input === 'string' ? input : (input && input.url) || '';
+        if(/\/website-lead(?:$|[?#])/i.test(url) && init && typeof init.body === 'string'){
+          var body = JSON.parse(init.body);
+          if(body && body.submissionId){
+            window.__kreiLastSubmissionId = cleanText(body.submissionId,120);
+            if(body.pageUrl){
+              try{ var pu = new URL(body.pageUrl, location.href); body.pageUrl = pu.origin + pu.pathname; }catch(_e){}
+            }
+            if(!body.gaClientId || !body.gaSessionId){
+              var identity = await window.kreiGetAnalyticsIdentity(900);
+              if(!body.gaClientId) body.gaClientId = identity.gaClientId;
+              if(!body.gaSessionId) body.gaSessionId = identity.gaSessionId;
+            }
+            init = Object.assign({}, init, {body:JSON.stringify(body)});
+          }
+        }
+      }catch(_e){}
+      return nativeFetch(input, init);
+    };
+  }
 
   if(/^G-[A-Z0-9]+$/i.test(GA4_ID)){
     window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
