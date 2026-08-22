@@ -223,4 +223,62 @@
     if(!fired90 && pct>=90){fired90=true;track('scroll_depth',{percent_scrolled:90});window.removeEventListener('scroll',onScroll);}
   }
   window.addEventListener('scroll',onScroll,{passive:true});
+
+  // Native website lead submit: bypass fetch/CORS entirely.
+  // Capture phase runs before the homepage's existing submit handler.
+  document.addEventListener('submit', function(e){
+    var f=e.target;
+    if(!f || f.id!=='lead-form') return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+
+    var err=document.getElementById('form-error');
+    var btn=document.getElementById('submit-btn');
+    if(err) err.style.display='none';
+    if(typeof f.reportValidity==='function' && !f.reportValidity()) return;
+
+    var q=document.getElementById('captcha-question');
+    var a=document.getElementById('captcha-answer');
+    var nums=(q&&q.textContent||'').match(/(\d+)\s*\+\s*(\d+)/);
+    if(nums && a && Number(a.value)!==Number(nums[1])+Number(nums[2])){
+      if(err){err.textContent='Please answer the quick spam-check question correctly.';err.style.display='block';}
+      return;
+    }
+
+    if(btn){btn.disabled=true;btn.textContent='Sending…';}
+    var data={};
+    new FormData(f).forEach(function(v,k){data[k]=v;});
+    var qs=new URLSearchParams(location.search);
+    data.pageUrl=location.origin+location.pathname;
+    data.landingPage=location.pathname;
+    data.referrer=document.referrer||'';
+    data.utmSource=qs.get('utm_source')||'';
+    data.utmMedium=qs.get('utm_medium')||'';
+    data.utmCampaign=qs.get('utm_campaign')||'';
+    data.utmTerm=qs.get('utm_term')||'';
+    data.utmContent=qs.get('utm_content')||'';
+    data.gclid=qs.get('gclid')||'';
+    data.gbraid=qs.get('gbraid')||'';
+    data.wbraid=qs.get('wbraid')||'';
+    data.fbclid=qs.get('fbclid')||'';
+    data.metaFbp=getCookie('_fbp');
+    data.metaFbc=getCookie('_fbc');
+    data.submissionId=(crypto.randomUUID?crypto.randomUUID():'web-'+Date.now()+'-'+Math.random().toString(36).slice(2));
+    data.source='Website';
+    data.submittedAt=new Date().toISOString();
+    window.__kreiLastSubmissionId=data.submissionId;
+    track('lead_submit_attempt',{form_name:'seller_lead',submission_id:data.submissionId});
+
+    var nativeForm=document.createElement('form');
+    nativeForm.method='POST';
+    nativeForm.action='https://n8n.hcautomations.fyi/webhook/7f671b06-1d6d-479f-8109-e12541982ce0/website-lead';
+    nativeForm.enctype='application/x-www-form-urlencoded';
+    Object.keys(data).forEach(function(k){
+      var input=document.createElement('input');
+      input.type='hidden';input.name=k;input.value=data[k]==null?'':String(data[k]);
+      nativeForm.appendChild(input);
+    });
+    document.body.appendChild(nativeForm);
+    nativeForm.submit();
+  }, true);
 })();
