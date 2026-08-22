@@ -1,0 +1,13 @@
+{
+  "name": "kbuyhouses-lead-relay",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "check": "wrangler check",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.68.0"
+  }
+}
