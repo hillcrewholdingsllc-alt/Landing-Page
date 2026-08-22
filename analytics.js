@@ -63,12 +63,42 @@
     }
   };
 
+  function nativeLeadPost(url, body){
+    var frameName='krei-lead-frame-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+    var iframe=document.createElement('iframe');
+    iframe.name=frameName;
+    iframe.style.display='none';
+    iframe.setAttribute('aria-hidden','true');
+    document.body.appendChild(iframe);
+    var form=document.createElement('form');
+    form.method='POST';
+    form.action=url;
+    form.target=frameName;
+    form.enctype='application/x-www-form-urlencoded';
+    form.style.display='none';
+    Object.keys(body||{}).forEach(function(key){
+      var input=document.createElement('input');
+      input.type='hidden';
+      input.name=key;
+      input.value=body[key] == null ? '' : String(body[key]);
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(function(){
+      try{form.remove();}catch(_e){}
+      try{iframe.remove();}catch(_e){}
+    },15000);
+    return Promise.resolve({ok:true,status:202,type:'opaque',kreiNativePost:true});
+  }
+
   if(typeof window.fetch === 'function'){
     var nativeFetch = window.fetch.bind(window);
     window.fetch = async function(input, init){
-      try{
-        var url = typeof input === 'string' ? input : (input && input.url) || '';
-        if(/\/website-lead(?:$|[?#])/i.test(url) && init && typeof init.body === 'string'){
+      var url = typeof input === 'string' ? input : (input && input.url) || '';
+      var leadRequest=/\/website-lead(?:$|[?#])/i.test(url) && init && typeof init.body === 'string';
+      if(leadRequest){
+        try{
           var body = JSON.parse(init.body);
           if(body && body.submissionId){
             window.__kreiLastSubmissionId = cleanText(body.submissionId,120);
@@ -84,10 +114,13 @@
             if(!body.fbclid && fbclid) body.fbclid=fbclid;
             if(!body.metaFbp) body.metaFbp=cleanText(getCookie('_fbp'),500);
             if(!body.metaFbc) body.metaFbc=cleanText(getCookie('_fbc'),500);
+            if(init.mode === 'no-cors'){
+              return nativeLeadPost(url, body);
+            }
             init = Object.assign({}, init, {body:JSON.stringify(body)});
           }
-        }
-      }catch(_e){}
+        }catch(_e){}
+      }
       return nativeFetch(input, init);
     };
   }
