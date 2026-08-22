@@ -2,7 +2,7 @@
   'use strict';
 
   window.dataLayer = window.dataLayer || [];
-  var GA4_ID = String(window.KREI_GA4_ID || '').trim();
+  var GA4_ID = String(window.KREI_GA4_ID || 'G-J8NKMZM719').trim();
   var gaReady = false;
 
   function cleanText(value, max){
@@ -24,7 +24,6 @@
   }
   window.kreiTrack = track;
 
-  // GA4 stays dormant until a real Measurement ID is provided.
   if(/^G-[A-Z0-9]+$/i.test(GA4_ID)){
     window.gtag = window.gtag || function(){window.dataLayer.push(arguments);};
     window.gtag('js', new Date());
