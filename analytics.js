@@ -2,7 +2,7 @@
   'use strict';
 
   window.dataLayer = window.dataLayer || [];
-  var GA4_ID = String(window.KREI_GA4_ID || 'G-J8NKMZM719').trim();
+  var GA4_ID = String(window.KREI_GA4_ID || 'G-EG4EF3TWJ6').trim();
   var META_PIXEL_ID = String(window.KREI_META_PIXEL_ID || '376165588741429').trim();
   var gaReady = false;
   var metaReady = false;
