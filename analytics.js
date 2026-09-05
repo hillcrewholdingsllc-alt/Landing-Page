@@ -4,9 +4,11 @@
   window.dataLayer = window.dataLayer || [];
   var GA4_ID = String(window.KREI_GA4_ID || 'G-EG4EF3TWJ6').trim();
   var GOOGLE_ADS_ID = String(window.KREI_GOOGLE_ADS_ID || 'AW-16507283647').trim();
+  var GOOGLE_ADS_CONVERSION_LABEL = String(window.KREI_GOOGLE_ADS_CONVERSION_LABEL || 'cUs3CKHXze4cEL_RpL89').trim();
   var META_PIXEL_ID = String(window.KREI_META_PIXEL_ID || '376165588741429').trim();
   var gaReady = false;
   var metaReady = false;
+  var adsLeadConversionFired = false;
 
   function cleanText(value, max){
     return String(value || '').replace(/\s+/g,' ').trim().slice(0, max || 120);
@@ -24,9 +26,25 @@
   }
   function track(name, params){
     var payload = Object.assign({}, baseParams(), params || {});
-    window.dataLayer.push(Object.assign({event:name}, payload));
     if(gaReady && typeof window.gtag === 'function'){
       window.gtag('event', name, payload);
+    }else{
+      window.dataLayer.push(Object.assign({event:name}, payload));
+    }
+  }
+  function trackGoogleAdsLeadConversion(){
+    if(adsLeadConversionFired || typeof window.gtag !== 'function') return;
+    if(!/^AW-\d+$/i.test(GOOGLE_ADS_ID)) return;
+    if(!/^[A-Za-z0-9_-]+$/.test(GOOGLE_ADS_CONVERSION_LABEL)) return;
+    adsLeadConversionFired = true;
+    try{
+      window.gtag('event','conversion',{
+        send_to: GOOGLE_ADS_ID + '/' + GOOGLE_ADS_CONVERSION_LABEL,
+        value: 1.0,
+        currency: 'USD'
+      });
+    }catch(_e){
+      adsLeadConversionFired = false;
     }
   }
   window.kreiGetAnalyticsIdentity = function(timeoutMs){
@@ -56,6 +74,9 @@
       p.submission_id = cleanText(window.__kreiLastSubmissionId,120);
     }
     track(name, p);
+    if(name === 'generate_lead'){
+      trackGoogleAdsLeadConversion();
+    }
     if(name === 'generate_lead' && metaReady && typeof window.fbq === 'function'){
       try{
         var metaOptions=p.submission_id?{eventID:cleanText(p.submission_id,120)}:undefined;
