@@ -1,227 +1,38 @@
-const N8N_WEBHOOK = 'https://n8n.hcautomations.fyi/webhook/7f671b06-1d6d-479f-8109-e12541982ce0/website-lead';
-const THANK_YOU_URL = 'https://kbuyhouses.com/thank-you.html';
-const HOME_URL = 'https://kbuyhouses.com/#get-offer';
-const MAX_BODY_BYTES = 64 * 1024;
-const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
-const ALLOWED_PAGE_HOSTS = new Set(['kbuyhouses.com', 'www.kbuyhouses.com']);
+const THANK_YOU='https://kbuyhouses.com/thank-you.html';
+const HOME='https://kbuyhouses.com/#get-offer';
+const N8N_IP='167.172.134.50';
+const clean=(v,n=2000)=>String(v??'').trim().slice(0,n);
+const json=(v,s=200)=>new Response(JSON.stringify(v),{status:s,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
+function allowed(req){return req.headers.get('cf-connecting-ip')===N8N_IP;}
+async function parse(req){const ct=req.headers.get('content-type')||''; if(ct.includes('application/json')) return await req.json(); const f=await req.formData(); const o={}; for(const [k,v] of f.entries()) if(typeof v==='string') o[k]=v; return o;}
+function normalize(r){const p={firstName:clean(r.firstName,120),lastName:clean(r.lastName,120),phone:clean(r.phone,60),email:clean(r.email,320),propertyAddress:clean(r.propertyAddress||r.address,500),sellerSituation:clean(r.sellerSituation||r.situation,500),notes:clean(r.notes,2000),source:clean(r.source||'Website',80),pageUrl:clean(r.pageUrl||'https://kbuyhouses.com/',1000),landingPage:clean(r.landingPage||'/',500),referrer:clean(r.referrer,1000),utmSource:clean(r.utmSource||r.utm_source,300),utmMedium:clean(r.utmMedium||r.utm_medium,300),utmCampaign:clean(r.utmCampaign||r.utm_campaign,500),utmTerm:clean(r.utmTerm||r.utm_term,500),utmContent:clean(r.utmContent||r.utm_content,500),gclid:clean(r.gclid,1000),gbraid:clean(r.gbraid,1000),wbraid:clean(r.wbraid,1000),fbclid:clean(r.fbclid,1000),formStartedAt:clean(r.formStartedAt,100),submittedAt:new Date().toISOString(),submissionId:clean(r.submissionId,150)||crypto.randomUUID(),website:clean(r.website,200),relay:'cloudflare-d1'}; if(!p.firstName||!p.phone||!p.propertyAddress) throw new Error('MISSING_REQUIRED_FIELDS'); return p;}
 
-function text(value, max = 2000) {
-  return String(value ?? '').trim().slice(0, max);
+function conversionEligible(p,raw){const digits=p.phone.replace(/\D/g,'');const start=Date.parse(p.formStartedAt),age=Date.now()-start;const words=p.propertyAddress.split(/\s+/).filter(Boolean);return !p.website&&raw.isTest!==true&&String(raw.isTest||'').toLowerCase()!=='true'&&(digits.length===10||(digits.length===11&&digits.startsWith('1')))&&Number.isFinite(start)&&age>=1800&&age<=86400000&&p.propertyAddress.length>=6&&(/\d/.test(p.propertyAddress)||words.length>=3)&&!/queef/i.test(p.firstName+' '+p.lastName);}
+const SITE_ORIGIN='https://kbuyhouses.com';
+function receiptResponse(value,status=200){return new Response(JSON.stringify(value),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','access-control-allow-origin':SITE_ORIGIN,'vary':'Origin'}});}
+async function claimConversion(req,env){
+ if(req.headers.get('origin')!==SITE_ORIGIN)return receiptResponse({ok:false},403);
+ const b=await req.json();const id=clean(b.submissionId,150),token=clean(b.receipt,100);
+ if(!id||!/^[a-f0-9]{64}$/.test(token))return receiptResponse({ok:false},400);
+ const row=await env.DB.prepare('SELECT payload_json FROM leads WHERE submission_id=?').bind(id).first();
+ if(!row)return receiptResponse({ok:false},404);
+ const p=JSON.parse(row.payload_json);
+ if(p._conversionReceipt!==token||p._conversionEligible!==true||p.website||p._conversionClaimedAt)return receiptResponse({ok:false},409);
+ if(Date.now()-Date.parse(p.submittedAt)>24*60*60*1000)return receiptResponse({ok:false},410);
+ p._conversionClaimedAt=new Date().toISOString();
+ const changed=await env.DB.prepare('UPDATE leads SET payload_json=? WHERE submission_id=? AND payload_json=?').bind(JSON.stringify(p),id,row.payload_json).run();
+ if(changed.meta?.changes!==1)return receiptResponse({ok:false},409);
+ return receiptResponse({ok:true,submissionId:id,conversionId:p._conversionId});
 }
 
-function jsonResponse(body, status = 200, extraHeaders = {}) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'no-store',
-      ...extraHeaders,
-    },
-  });
-}
-
-async function parsePayload(request) {
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > MAX_BODY_BYTES) throw new Error('PAYLOAD_TOO_LARGE');
-
-  const contentType = request.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) return await request.json();
-
-  if (
-    contentType.includes('multipart/form-data') ||
-    contentType.includes('application/x-www-form-urlencoded')
-  ) {
-    const form = await request.formData();
-    const payload = {};
-    for (const [key, value] of form.entries()) {
-      if (typeof value === 'string') payload[key] = value;
-    }
-    return payload;
-  }
-
-  throw new Error('UNSUPPORTED_CONTENT_TYPE');
-}
-
-function normalizePayload(raw, request) {
-  const payload = {
-    firstName: text(raw.firstName, 120),
-    lastName: text(raw.lastName, 120),
-    phone: text(raw.phone, 60),
-    email: text(raw.email, 320),
-    propertyAddress: text(raw.propertyAddress || raw.address, 500),
-    sellerSituation: text(raw.sellerSituation || raw.situation, 500),
-    notes: text(raw.notes, 2000),
-    source: text(raw.source || 'Website', 80),
-    pageUrl: text(raw.pageUrl || 'https://kbuyhouses.com/', 1000),
-    landingPage: text(raw.landingPage || '/', 500),
-    referrer: text(raw.referrer, 1000),
-    utmSource: text(raw.utmSource || raw.utm_source, 300),
-    utmMedium: text(raw.utmMedium || raw.utm_medium, 300),
-    utmCampaign: text(raw.utmCampaign || raw.utm_campaign, 500),
-    utmTerm: text(raw.utmTerm || raw.utm_term, 500),
-    utmContent: text(raw.utmContent || raw.utm_content, 500),
-    gclid: text(raw.gclid, 1000),
-    gbraid: text(raw.gbraid, 1000),
-    wbraid: text(raw.wbraid, 1000),
-    fbclid: text(raw.fbclid, 1000),
-    formStartedAt: text(raw.formStartedAt, 100),
-    submittedAt: new Date().toISOString(),
-    submissionId: text(raw.submissionId, 150) || crypto.randomUUID(),
-    website: text(raw.website, 200),
-  };
-
-  if (!payload.firstName || !payload.phone || !payload.propertyAddress) {
-    throw new Error('MISSING_REQUIRED_FIELDS');
-  }
-
-  const digits = payload.phone.replace(/\D/g, '');
-  if (!(digits.length === 10 || (digits.length === 11 && digits.startsWith('1')))) {
-    throw new Error('INVALID_PHONE');
-  }
-
-  if (payload.website) throw new Error('SPAM_HONEYPOT');
-
-  const startedMs = Date.parse(payload.formStartedAt);
-  if (!payload.formStartedAt || !Number.isFinite(startedMs)) {
-    throw new Error('SPAM_TIMING_MISSING');
-  }
-  const formAgeMs = Date.now() - startedMs;
-  if (formAgeMs < 1800 || formAgeMs > 2 * 60 * 60 * 1000) {
-    throw new Error('SPAM_TIMING_INVALID');
-  }
-
-  try {
-    const host = new URL(payload.pageUrl).hostname.toLowerCase();
-    if (!ALLOWED_PAGE_HOSTS.has(host)) throw new Error('SPAM_PAGE_ORIGIN');
-  } catch (error) {
-    if (error instanceof Error && error.message === 'SPAM_PAGE_ORIGIN') throw error;
-    throw new Error('SPAM_PAGE_ORIGIN');
-  }
-
-  payload.relay = 'cloudflare-worker';
-  payload.relayRequestId = crypto.randomUUID();
-  payload.userAgent = text(request.headers.get('user-agent'), 500);
-  payload.cfRay = text(request.headers.get('cf-ray'), 100);
-
-  return payload;
-}
-
-async function verifyTurnstile(raw, request, env) {
-  const secret = text(env?.TURNSTILE_SECRET_KEY, 500);
-  const siteKey = text(env?.TURNSTILE_SITE_KEY, 500);
-  if (!secret || !siteKey) return { enabled: false, success: true };
-
-  const token = text(raw['cf-turnstile-response'], 4096);
-  if (!token) return { enabled: true, success: false, reason: 'missing-token' };
-
-  const form = new FormData();
-  form.append('secret', secret);
-  form.append('response', token);
-  const remoteIp = text(request.headers.get('cf-connecting-ip'), 100);
-  if (remoteIp) form.append('remoteip', remoteIp);
-  form.append('idempotency_key', crypto.randomUUID());
-
-  const response = await fetch(TURNSTILE_VERIFY_URL, { method: 'POST', body: form });
-  if (!response.ok) {
-    return { enabled: true, success: false, reason: 'verify-http-' + response.status };
-  }
-
-  const result = await response.json();
-  return {
-    enabled: true,
-    success: result.success === true,
-    reason: result.success === true
-      ? ''
-      : (Array.isArray(result['error-codes']) ? result['error-codes'].join(',') : 'verification-failed'),
-  };
-}
-
-async function forwardToN8n(payload) {
-  const send = () => fetch(N8N_WEBHOOK, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json; charset=utf-8',
-      'accept': 'application/json',
-      'x-krei-relay': 'cloudflare-worker',
-    },
-    body: JSON.stringify(payload),
-    redirect: 'manual',
-  });
-
-  let response = await send();
-  if (response.status >= 500) response = await send();
-  return response;
-}
-
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-
-    if (request.method === 'GET' && url.pathname === '/health') {
-      return jsonResponse({
-        ok: true,
-        service: 'kbuyhouses-lead-relay',
-        turnstileEnabled: Boolean(env?.TURNSTILE_SECRET_KEY && env?.TURNSTILE_SITE_KEY),
-      });
-    }
-
-    if (request.method === 'GET' && url.pathname === '/turnstile-config') {
-      const siteKey = text(env?.TURNSTILE_SITE_KEY, 500);
-      const enabled = Boolean(siteKey && env?.TURNSTILE_SECRET_KEY);
-      return jsonResponse({ enabled, siteKey: enabled ? siteKey : '' }, 200, {
-        'access-control-allow-origin': 'https://kbuyhouses.com',
-        'vary': 'Origin',
-      });
-    }
-
-    if (request.method !== 'POST' || url.pathname !== '/lead') {
-      return new Response('Not Found', { status: 404 });
-    }
-
-    try {
-      const raw = await parsePayload(request);
-      const turnstile = await verifyTurnstile(raw, request, env);
-
-      if (!turnstile.success) {
-        console.warn(JSON.stringify({
-          event: 'turnstile_rejected',
-          reason: turnstile.reason,
-          cfRay: text(request.headers.get('cf-ray'), 100),
-        }));
-        return Response.redirect(`${HOME_URL}&error=verification`, 303);
-      }
-
-      const payload = normalizePayload(raw, request);
-      payload.turnstileVerified = turnstile.enabled === true;
-      const upstream = await forwardToN8n(payload);
-
-      if (upstream.status >= 200 && upstream.status < 400) {
-        console.log(JSON.stringify({
-          event: 'lead_forwarded',
-          submissionId: payload.submissionId,
-          upstreamStatus: upstream.status,
-          turnstileVerified: payload.turnstileVerified,
-        }));
-        return Response.redirect(THANK_YOU_URL, 303);
-      }
-
-      console.error(JSON.stringify({
-        event: 'n8n_rejected',
-        submissionId: payload.submissionId,
-        upstreamStatus: upstream.status,
-      }));
-      return Response.redirect(`${HOME_URL}&error=submission`, 303);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      console.error(JSON.stringify({ event: 'lead_relay_error', message }));
-
-      if (message === 'PAYLOAD_TOO_LARGE') return jsonResponse({ ok: false, error: message }, 413);
-      if (message === 'UNSUPPORTED_CONTENT_TYPE') return jsonResponse({ ok: false, error: message }, 415);
-      if (['MISSING_REQUIRED_FIELDS', 'INVALID_PHONE'].includes(message)) {
-        return Response.redirect(`${HOME_URL}&error=validation`, 303);
-      }
-      if (message.startsWith('SPAM_')) return Response.redirect(THANK_YOU_URL, 303);
-      return Response.redirect(`${HOME_URL}&error=submission`, 303);
-    }
-  },
+export default {async fetch(req,env){const u=new URL(req.url); try{
+if(req.method==='OPTIONS'&&u.pathname==='/conversion-receipt'){if(req.headers.get('origin')!==SITE_ORIGIN)return new Response(null,{status:403});return new Response(null,{status:204,headers:{'access-control-allow-origin':SITE_ORIGIN,'access-control-allow-methods':'POST','access-control-allow-headers':'content-type','vary':'Origin'}});}
+if(req.method==='POST'&&u.pathname==='/conversion-receipt')return await claimConversion(req,env);
+if(req.method==='GET'&&u.pathname==='/health'){const c=await env.DB.prepare("SELECT COUNT(*) c FROM leads WHERE status IN ('pending','processing')").first(); return json({ok:true,service:'kbuyhouses-lead-relay',queued:Number(c?.c||0)});}
+if(req.method==='POST'&&u.pathname==='/lead'){const raw=await parse(req); const p=normalize(raw); if(p.website) return Response.redirect(THANK_YOU,303); p._conversionEligible=conversionEligible(p,raw);p._conversionId=crypto.randomUUID();p._conversionReceipt=Array.from(crypto.getRandomValues(new Uint8Array(32)),x=>x.toString(16).padStart(2,'0')).join(''); await env.DB.prepare('INSERT OR IGNORE INTO leads (submission_id,payload_json,status,created_at,attempts) VALUES (?,?,?,?,0)').bind(p.submissionId,JSON.stringify(p),'pending',new Date().toISOString()).run(); const stored=await env.DB.prepare('SELECT payload_json FROM leads WHERE submission_id=?').bind(p.submissionId).first(); if(!stored)throw new Error('LEAD_PERSISTENCE_UNCONFIRMED'); const saved=JSON.parse(stored.payload_json); const dest=new URL(THANK_YOU); if(env.CONVERSION_RECEIPTS_ENABLED==='true'&&saved._conversionEligible===true&&saved._conversionReceipt===p._conversionReceipt)dest.hash=new URLSearchParams({submission:p.submissionId,receipt:p._conversionReceipt}).toString(); return Response.redirect(dest.toString(),303);}
+if(req.method==='GET'&&u.pathname==='/next'){if(!allowed(req)) return new Response('Forbidden',{status:403}); const stale=new Date(Date.now()-10*60*1000).toISOString(); const row=await env.DB.prepare("SELECT id,submission_id,payload_json,attempts FROM leads WHERE status='pending' OR (status='processing' AND claimed_at < ?) ORDER BY id LIMIT 1").bind(stale).first(); if(!row) return new Response(null,{status:204}); const now=new Date().toISOString(); await env.DB.prepare("UPDATE leads SET status='processing', claimed_at=?, attempts=attempts+1 WHERE id=?").bind(now,row.id).run(); return json({ok:true,id:row.id,submissionId:row.submission_id,attempts:Number(row.attempts||0)+1,payload:JSON.parse(row.payload_json)});}
+if(req.method==='POST'&&u.pathname==='/ack'){if(!allowed(req)) return new Response('Forbidden',{status:403}); const b=await req.json(); await env.DB.prepare("UPDATE leads SET status='processed', processed_at=?, last_error=NULL WHERE id=?").bind(new Date().toISOString(),Number(b.id)).run(); return json({ok:true});}
+if(req.method==='POST'&&u.pathname==='/fail'){if(!allowed(req)) return new Response('Forbidden',{status:403}); const b=await req.json(); const row=await env.DB.prepare('SELECT attempts FROM leads WHERE id=?').bind(Number(b.id)).first(); const status=Number(row?.attempts||0)>=5?'failed':'pending'; await env.DB.prepare('UPDATE leads SET status=?, last_error=?, claimed_at=NULL WHERE id=?').bind(status,clean(b.error,1000),Number(b.id)).run(); return json({ok:true,status});}
+return new Response('Not Found',{status:404});
+}catch(e){console.error(JSON.stringify({event:'relay_error',message:String(e?.message||e)})); if(req.method==='POST'&&u.pathname==='/lead') return Response.redirect(HOME+'?error=submission',303); return json({ok:false,error:String(e?.message||e)},500);}}
 };

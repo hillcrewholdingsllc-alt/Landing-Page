@@ -32,7 +32,7 @@
       window.dataLayer.push(Object.assign({event:name}, payload));
     }
   }
-  function trackGoogleAdsLeadConversion(){
+  function trackGoogleAdsLeadConversion(submissionId){
     if(adsLeadConversionFired || typeof window.gtag !== 'function') return;
     if(!/^AW-\d+$/i.test(GOOGLE_ADS_ID)) return;
     if(!/^[A-Za-z0-9_-]+$/.test(GOOGLE_ADS_CONVERSION_LABEL)) return;
@@ -41,7 +41,8 @@
       window.gtag('event','conversion',{
         send_to: GOOGLE_ADS_ID + '/' + GOOGLE_ADS_CONVERSION_LABEL,
         value: 1.0,
-        currency: 'USD'
+        currency: 'USD',
+        transaction_id: cleanText(submissionId,150)
       });
     }catch(_e){
       adsLeadConversionFired = false;
@@ -75,7 +76,7 @@
     }
     track(name, p);
     if(name === 'generate_lead'){
-      trackGoogleAdsLeadConversion();
+      trackGoogleAdsLeadConversion(p.submission_id);
     }
     if(name === 'generate_lead' && metaReady && typeof window.fbq === 'function'){
       try{
@@ -188,3 +189,4 @@
   window.addEventListener('scroll',onScroll,{passive:true});
 
 })();
+

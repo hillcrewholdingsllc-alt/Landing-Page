@@ -3,9 +3,21 @@
   "name": "kbuyhouses-lead-relay",
   "main": "src/index.js",
   "compatibility_date": "2026-08-22",
-  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kbuyhouses-lead-intake",
+      "database_id": "edd8f0e3-f1fd-4d77-bbdd-97b859c2d7ea"
+    }
+  ],
+  "vars": {
+    "CONVERSION_RECEIPTS_ENABLED": "true"
   }
 }

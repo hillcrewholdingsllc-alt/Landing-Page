@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "wrangler dev",
     "check": "wrangler check",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "test": "node test/receipts.cjs && node test/thank-you.cjs"
   },
   "devDependencies": {
     "wrangler": "^4.68.0"
