@@ -16,5 +16,8 @@
       "database_name": "kbuyhouses-lead-intake",
       "database_id": "edd8f0e3-f1fd-4d77-bbdd-97b859c2d7ea"
     }
-  ]
+  ],
+  "vars": {
+    "CONVERSION_RECEIPTS_ENABLED": "true"
+  }
 }
