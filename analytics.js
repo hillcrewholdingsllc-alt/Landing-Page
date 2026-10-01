@@ -80,6 +80,16 @@
   };
 
   function kreiDetectAttribution(){
+    var explicitChannel=cleanText(window.KREI_ATTRIBUTION_CHANNEL,80);
+    var explicitNumber=cleanText(window.KREI_TRACKING_NUMBER,30);
+    if(explicitChannel && explicitNumber){
+      return {channel:explicitChannel,e164:explicitNumber,display:
+        explicitNumber==='+12523041500'?'(252) 304-1500':
+        explicitNumber==='+12528882210'?'(252) 888-2210':
+        explicitNumber==='+12528887483'?'(252) 888-7483':
+        explicitNumber==='+12526686812'?'(252) 668-6812':
+        '(252) 359-3197'};
+    }
     var params;
     try{ params=new URLSearchParams(location.search || ''); }catch(_e){ params={get:function(){return '';},has:function(){return false;}}; }
     var source=cleanText(params.get('utm_source'),80).toLowerCase();
