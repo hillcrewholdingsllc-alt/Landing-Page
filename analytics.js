@@ -21,7 +21,9 @@
     return {
       page_path: location.pathname,
       page_title: document.title,
-      page_location: location.origin + location.pathname
+      page_location: location.origin + location.pathname,
+      attribution_channel: String(window.KREI_ATTRIBUTION_CHANNEL || 'direct_or_legacy'),
+      tracking_number: String(window.KREI_TRACKING_NUMBER || '+12523593197')
     };
   }
   function track(name, params){
@@ -68,6 +70,73 @@
       try{ window.gtag('get', GA4_ID, 'session_id', function(v){ setField('gaSessionId',v); }); }catch(_e){ setField('gaSessionId',''); }
     });
   };
+
+  var KREI_PHONE_MAP = {
+    main: { channel:'direct_or_legacy', e164:'+12523593197', display:'(252) 359-3197' },
+    organic: { channel:'organic_search', e164:'+12528882210', display:'(252) 888-2210' },
+    google_ads: { channel:'google_ads_ppc', e164:'+12523041500', display:'(252) 304-1500' },
+    gbp: { channel:'google_business_profile', e164:'+12528887483', display:'(252) 888-7483' },
+    meta: { channel:'meta_paid_social', e164:'+12526686812', display:'(252) 668-6812' }
+  };
+
+  function kreiDetectAttribution(){
+    var params;
+    try{ params=new URLSearchParams(location.search || ''); }catch(_e){ params={get:function(){return '';},has:function(){return false;}}; }
+    var source=cleanText(params.get('utm_source'),80).toLowerCase();
+    var medium=cleanText(params.get('utm_medium'),80).toLowerCase();
+
+    if(params.has('gclid') || params.has('gbraid') || params.has('wbraid') ||
+       /^(cpc|ppc|paid_search|paidsearch)$/i.test(medium) ||
+       /^(google_ads|googleads|adwords)$/i.test(source)){
+      return KREI_PHONE_MAP.google_ads;
+    }
+    if(/^(gmb|gbp|google_business|google_business_profile|googlebusiness)$/i.test(source)){
+      return KREI_PHONE_MAP.gbp;
+    }
+    if(params.has('fbclid') || /^(facebook|meta|instagram)$/i.test(source) ||
+       /^(paid_social|social_paid)$/i.test(medium)){
+      return KREI_PHONE_MAP.meta;
+    }
+
+    var refHost='';
+    try{ refHost=document.referrer ? new URL(document.referrer).hostname.toLowerCase() : ''; }catch(_e){}
+    if(refHost && !/(^|\.)kbuyhouses\.com$/i.test(refHost) &&
+       /(^|\.)(google\.|bing\.com$|search\.yahoo\.com$|duckduckgo\.com$|search\.brave\.com$)/i.test(refHost)){
+      return KREI_PHONE_MAP.organic;
+    }
+
+    try{
+      var saved=sessionStorage.getItem('krei_attribution_channel');
+      if(saved && KREI_PHONE_MAP[saved]) return KREI_PHONE_MAP[saved];
+    }catch(_e){}
+
+    return KREI_PHONE_MAP.main;
+  }
+
+  function kreiApplyDynamicPhoneNumber(){
+    var selected=kreiDetectAttribution();
+    var key='main';
+    Object.keys(KREI_PHONE_MAP).some(function(k){
+      if(KREI_PHONE_MAP[k].channel===selected.channel){ key=k; return true; }
+      return false;
+    });
+
+    window.KREI_ATTRIBUTION_CHANNEL=selected.channel;
+    window.KREI_TRACKING_NUMBER=selected.e164;
+    try{
+      if(key!=='main') sessionStorage.setItem('krei_attribution_channel',key);
+    }catch(_e){}
+
+    document.querySelectorAll('a[href^="tel:"]').forEach(function(a){
+      var raw=(a.getAttribute('href')||'').replace(/\D/g,'');
+      if(raw==='12523593197'){
+        a.setAttribute('href','tel:'+selected.e164);
+        a.textContent=(a.textContent||'').replace(/\(252\)\s*359-3197/g,selected.display);
+      }
+    });
+  }
+
+  kreiApplyDynamicPhoneNumber();
 
   window.kreiTrack = function(name, params){
     var p = Object.assign({}, params || {});
