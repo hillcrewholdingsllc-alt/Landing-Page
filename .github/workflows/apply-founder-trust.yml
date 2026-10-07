@@ -1,0 +1,76 @@
+name: Apply founder trust section
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-founder-trust.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add founder bio and local proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          index_path = Path('index.html')
+          index = index_path.read_text()
+
+          if 'founder-story' not in index:
+              schema_marker = '},{"@type":"WebSite","@id":"https://kbuyhouses.com/#website"'
+              person_schema = '},{"@type":"Person","@id":"https://kbuyhouses.com/#addison-hill","name":"Addison Hill","jobTitle":"Principal","worksFor":{"@id":"https://kbuyhouses.com/#business"}}'
+              if schema_marker not in index:
+                  raise SystemExit('Homepage schema marker not found')
+              index = index.replace(schema_marker, person_schema + schema_marker, 1)
+
+              founder_css = '''
+              .founder-story{background:#fff}.founder-intro{display:grid;grid-template-columns:minmax(260px,.72fr) 1.28fr;gap:44px;align-items:center}.founder-photo{margin:0}.founder-photo img{display:block;width:100%;max-height:520px;aspect-ratio:4/5;object-fit:cover;border-radius:26px}.founder-copy h2{margin:8px 0 18px}.founder-copy p{color:#5f6b64;line-height:1.7}.founder-lead{font-size:19px}.founder-points{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.founder-points span{background:#e9efea;color:#244a3a;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:800}.transaction-gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}.transaction-gallery figure{margin:0;background:#faf7f1;border:1px solid #e2e6e2;border-radius:18px;overflow:hidden}.transaction-gallery img{display:block;width:100%;height:230px;object-fit:cover}.transaction-gallery figcaption{padding:13px 14px;color:#5f6b64;font-size:13px;line-height:1.45}.founder-note{font-size:13px!important;color:#78827c!important;margin-top:16px}@media(max-width:850px){.founder-intro{grid-template-columns:1fr}.founder-photo img{max-width:430px;margin:0 auto}.transaction-gallery{grid-template-columns:1fr 1fr}}@media(max-width:560px){.transaction-gallery{grid-template-columns:1fr}.transaction-gallery img{height:300px}}
+              '''
+              index = index.replace('</style>', founder_css + '</style>', 1)
+
+              founder_section = '''<section class="section founder-story" aria-labelledby="meet-addison"><div class="wrap founder-intro"><figure class="founder-photo"><img src="/assets/addison-hill-founder.webp" alt="Professional portrait of Addison Hill of K Real Estate &amp; Investment LLC" loading="lazy" decoding="async"></figure><div class="founder-copy"><p class="eyebrow">LOCAL. DIRECT. PERSONAL.</p><h2 id="meet-addison">Meet Addison Hill</h2><p class="founder-lead">Addison Hill leads K Real Estate &amp; Investment LLC, a Greenville-based real estate investment company focused on buying houses directly in Greenville and Pitt County.</p><p>Addison works directly with local property owners to understand the property, the seller’s situation, and whether a direct sale makes sense. The goal is a straightforward conversation, a clear offer when the property fits, and a closing timeline that works for the seller.</p><div class="founder-points"><span>Greenville-based</span><span>Direct local buyer</span><span>Seller-focused process</span></div><p class="founder-note">The photos below are from local business, community, and real-estate experiences.</p></div></div><div class="wrap transaction-gallery" aria-label="Local K Real Estate photos"><figure><img src="/assets/addison-seller-home.webp" alt="K Real Estate representative with a local property owner outside a home" loading="lazy" decoding="async"><figcaption>Working directly with local property owners</figcaption></figure><figure><img src="/assets/addison-client-closing.webp" alt="K Real Estate representative with a client after a local transaction" loading="lazy" decoding="async"><figcaption>Local closing and transaction experience</figcaption></figure><figure><img src="/assets/addison-local-sellers.webp" alt="K Real Estate representative with local property owners outside a Greenville-area office" loading="lazy" decoding="async"><figcaption>Serving Greenville and Pitt County</figcaption></figure><figure><img src="/assets/addison-ecu-community.webp" alt="K Real Estate principal at an East Carolina University community event" loading="lazy" decoding="async"><figcaption>Longstanding ties to the Greenville community</figcaption></figure></div></section>'''
+              resource_marker = '<section class="section" style="background:#e9efea">'
+              if resource_marker not in index:
+                  raise SystemExit('Homepage seller-resource marker not found')
+              index = index.replace(resource_marker, founder_section + resource_marker, 1)
+              index_path.write_text(index)
+
+          ppc_path = Path('lp/greenville-cash-offer.html')
+          ppc = ppc_path.read_text()
+          if 'ppc-founder-proof' not in ppc:
+              ppc_css = '''
+              .ppc-founder-proof{padding:44px 0;background:#f7f3eb}.ppc-founder-grid{display:grid;grid-template-columns:180px 1fr;gap:28px;align-items:center;background:#fff;border:1px solid #dfe5df;border-radius:22px;padding:24px}.ppc-founder-grid>img{display:block;width:180px;height:220px;object-fit:cover;border-radius:16px}.ppc-founder-grid h2{font:700 clamp(28px,3vw,38px)/1.08 'Playfair Display',serif;color:#173d2e;margin:7px 0 12px}.ppc-founder-grid p{color:#657069;line-height:1.65;margin:0}.ppc-proof-photos{display:flex;gap:10px;margin-top:15px}.ppc-proof-photos img{width:92px;height:68px;object-fit:cover;border-radius:10px}@media(max-width:620px){.ppc-founder-grid{grid-template-columns:1fr}.ppc-founder-grid>img{width:140px;height:170px}.ppc-proof-photos img{width:84px;height:62px}}
+              '''
+              ppc = ppc.replace('</style>', ppc_css + '</style>', 1)
+              ppc_section = '''<section class="ppc-founder-proof" aria-labelledby="local-buyer-proof"><div class="wrap ppc-founder-grid"><img src="/assets/addison-hill-founder.webp" alt="Professional portrait of Addison Hill of K Real Estate &amp; Investment LLC" loading="lazy" decoding="async"><div><div class="eyebrow">REAL LOCAL BUYER</div><h2 id="local-buyer-proof">A local Greenville company, not a national call center.</h2><p><strong>Addison Hill</strong> leads K Real Estate &amp; Investment LLC and works directly with property owners throughout Greenville and Pitt County. You can have a straightforward conversation about the property, your timing, and whether a direct sale makes sense.</p><div class="ppc-proof-photos" aria-label="Local real estate photos"><img src="/assets/addison-seller-home.webp" alt="K Real Estate representative with a local property owner outside a home" loading="lazy" decoding="async"><img src="/assets/addison-client-closing.webp" alt="K Real Estate representative with a client after a local transaction" loading="lazy" decoding="async"></div></div></div></section>'''
+              ppc_marker = '</section><section class="proof">'
+              if ppc_marker not in ppc:
+                  raise SystemExit('PPC proof marker not found')
+              ppc = ppc.replace(ppc_marker, '</section>' + ppc_section + '<section class="proof">', 1)
+              ppc_path.write_text(ppc)
+
+          shutil.rmtree('.staging', ignore_errors=True)
+          Path('.github/workflows/apply-founder-trust.yml').unlink(missing_ok=True)
+          PY
+
+      - name: Commit founder trust updates
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Add founder bio and local transaction proof'
+          git push
