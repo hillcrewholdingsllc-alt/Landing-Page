@@ -1,9 +1,11 @@
 name: Cut over lead form to Cloudflare relay
+
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
+
 permissions:
   contents: write
+
 jobs:
   cutover:
     runs-on: ubuntu-latest
@@ -31,32 +33,3 @@ jobs:
           else
             echo 'No cutover needed'
           fi
-      - name: Decode optimized site photos
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p assets
-          for f in .staging/*.b64; do
-            [ -e "$f" ] || continue
-            name="$(basename "$f" .b64)"
-            base64 --decode "$f" > "assets/${name}.webp"
-          done
-          if [ -f .staging/addison-local-sellers.part1 ] && [ -f .staging/addison-local-sellers.part2 ]; then
-            cat .staging/addison-local-sellers.part1 .staging/addison-local-sellers.part2 | base64 --decode > assets/addison-local-sellers.webp
-          fi
-          for img in assets/addison-*.webp; do
-            test -s "$img"
-            file "$img" | grep -qi 'Web/P image'
-          done
-      - name: Commit site photos if needed
-        shell: bash
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add assets/addison-*.webp
-          if git diff --cached --quiet; then
-            echo 'Site photos already installed'
-            exit 0
-          fi
-          git commit -m 'Add KREI founder and local trust photos'
-          git push
