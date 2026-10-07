@@ -1,0 +1,14 @@
+.hope-chat-launcher{position:fixed;right:22px;bottom:22px;z-index:1000;border:0;border-radius:999px;padding:15px 21px;background:#244a3a;color:#fff;font:700 15px/1.3 system-ui,sans-serif;box-shadow:0 6px 24px #173d2e30;cursor:pointer}
+.hope-chat-launcher.hope-chat-secondary{position:static;display:block;margin:16px auto 0;background:transparent;color:#244a3a;border:1px solid #244a3a;box-shadow:none;padding:10px 16px}
+#hope-chat-panel{position:fixed;right:20px;bottom:20px;z-index:1001;width:min(420px,calc(100vw - 32px));max-height:calc(100dvh - 40px);overflow:auto;background:#faf7f1;border:1px solid #d5ddd6;border-radius:20px;box-shadow:0 12px 48px #173d2e40;color:#173d2e;font:15px/1.5 system-ui,sans-serif;padding:18px;box-sizing:border-box}
+#hope-chat-panel[hidden]{display:none}
+.hope-chat-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.hope-chat-heading button{border:1px solid #d5ddd6;border-radius:8px;background:#fff;color:#173d2e;padding:9px 12px;cursor:pointer}
+.hope-chat-disclosure,.hope-chat-status{font-size:12px;color:#536057}
+.hope-chat-disclosure a{color:#173d2e;text-decoration:underline}
+.hope-chat-consent{width:100%;padding:13px;border:0;border-radius:12px;background:#244a3a;color:#fff;font:700 15px system-ui,sans-serif;cursor:pointer}
+.hope-chat-consent:disabled{opacity:.6;cursor:wait}
+.hope-chat-host elevenlabs-convai{display:block;width:100%;height:450px;max-height:60dvh}
+.hope-form-review{padding:12px;border:1px solid #acc3b1;background:#e9efea;border-radius:10px;color:#173d2e;font-size:14px}
+.hope-chat-launcher:focus-visible,#hope-chat-panel button:focus-visible{outline:3px solid #a17b42;outline-offset:3px}
+@media(max-width:560px){.hope-chat-launcher{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));font-size:14px}#hope-chat-panel{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:calc(100vw - 24px);max-height:calc(100dvh - 40px)}}
