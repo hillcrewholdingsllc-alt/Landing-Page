@@ -11,4 +11,4 @@
 .hope-chat-host elevenlabs-convai{display:block;width:100%;height:450px;max-height:60dvh}
 .hope-form-review{padding:12px;border:1px solid #acc3b1;background:#e9efea;border-radius:10px;color:#173d2e;font-size:14px}
 .hope-chat-launcher:focus-visible,#hope-chat-panel button:focus-visible{outline:3px solid #a17b42;outline-offset:3px}
-@media(max-width:560px){.hope-chat-launcher{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));font-size:14px}#hope-chat-panel{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:calc(100vw - 24px);max-height:calc(100dvh - 40px)}}
+@media(max-width:560px){.hope-chat-launcher{right:12px;bottom:calc(84px + env(safe-area-inset-bottom));font-size:14px}#hope-chat-panel{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));width:calc(100vw - 24px);max-height:calc(100dvh - 40px)}}
