@@ -1,0 +1,59 @@
+name: Add local trust section
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/add-local-trust-section.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add founder bio and authentic local photos
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          index = Path('index.html')
+          s = index.read_text()
+          if 'id="about-local-buyer"' not in s:
+              css = '''<style>
+          .local-about{background:#fff}.about-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:44px;align-items:center}.about-copy p{font-size:17px;line-height:1.7;color:#5f6b64}.about-badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}.about-badges span{background:#e9efea;color:#173d2e;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:800}.founder-card{margin:0;background:#f7f3eb;border:1px solid #e4e0d8;border-radius:24px;padding:14px}.founder-card img{width:100%;height:390px;object-fit:cover;object-position:center 18%;border-radius:17px;display:block}.founder-card figcaption{font-size:13px;color:#68736c;padding:11px 5px 3px}.local-gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px}.local-gallery figure{margin:0;background:#f7f3eb;border:1px solid #e4e0d8;border-radius:18px;overflow:hidden}.local-gallery img{width:100%;height:230px;object-fit:cover;display:block}.local-gallery figcaption{padding:12px 14px;font-size:13px;font-weight:700;color:#3f4a44}.local-gallery figure:nth-child(3) img{object-position:center 35%}@media(max-width:850px){.about-grid{grid-template-columns:1fr}.founder-card{max-width:520px}.local-gallery{grid-template-columns:1fr 1fr}}@media(max-width:560px){.local-gallery{grid-template-columns:1fr}.local-gallery img{height:300px}.founder-card img{height:420px}}
+          </style>'''
+              s = s.replace('</head>', css + '</head>', 1)
+              section = '''<section class="section local-about" id="about-local-buyer"><div class="wrap"><div class="about-grid"><div class="about-copy"><p class="eyebrow">LOCAL. DIRECT. ACCESSIBLE.</p><h2>A local buyer you can actually reach.</h2><p><strong>Addison Hill</strong> leads K Real Estate &amp; Investment LLC, a Greenville-based real estate investment company focused on direct property purchases throughout Pitt County.</p><p>Our approach is straightforward: review the property, explain the offer clearly, and let the seller decide whether a direct sale fits. No pressure and no obligation.</p><div class="about-badges"><span>Greenville based</span><span>Direct property buyer</span><span>Local closing experience</span></div></div><figure class="founder-card"><img src="/assets/addison-hill-founder.webp" alt="K Real Estate and Investment representative" width="302" height="450" loading="lazy" decoding="async"><figcaption>K Real Estate &amp; Investment LLC · Greenville, North Carolina</figcaption></figure></div><div class="local-gallery" aria-label="K Real Estate local transaction and community photos"><figure><img src="/assets/addison-seller-home.webp" alt="Local homeowner and real estate buyer outside a Greenville-area home" width="338" height="450" loading="lazy" decoding="async"><figcaption>Working directly with local homeowners</figcaption></figure><figure><img src="/assets/addison-client-closing.webp" alt="Local real estate closing in Greenville, North Carolina" width="338" height="450" loading="lazy" decoding="async"><figcaption>Real local transactions</figcaption></figure><figure><img src="/assets/addison-local-sellers.webp" alt="Local property sellers and real estate buyer in Greenville, North Carolina" width="450" height="338" loading="lazy" decoding="async"><figcaption>Face-to-face service</figcaption></figure><figure><img src="/assets/addison-ecu-community.webp" alt="Community event in Greenville, North Carolina" width="253" height="450" loading="lazy" decoding="async"><figcaption>Rooted in the Greenville community</figcaption></figure></div></div></section>'''
+              marker = '<section class="section" style="background:#e9efea">'
+              if marker not in s:
+                  raise SystemExit('homepage insertion marker not found')
+              s = s.replace(marker, section + marker, 1)
+              index.write_text(s)
+
+          ppc = Path('lp/greenville-cash-offer.html')
+          p = ppc.read_text()
+          if 'class="local-human-proof"' not in p:
+              css = '''\n  .local-human-proof{padding:44px 0;background:#fff}.human-proof-grid{display:grid;grid-template-columns:.72fr 1.28fr;gap:28px;align-items:center}.human-proof-grid>img{width:100%;height:300px;object-fit:cover;border-radius:22px}.human-proof-grid h2{font:700 clamp(30px,4vw,42px)/1.08 'Playfair Display',serif;color:#173d2e;margin:8px 0 12px}.human-proof-grid p{color:#68736c;line-height:1.65}.mini-founder{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:13px;font-weight:700;color:#3f4a44}.mini-founder img{width:54px;height:54px;border-radius:50%;object-fit:cover;object-position:center 18%}@media(max-width:700px){.human-proof-grid{grid-template-columns:1fr}.human-proof-grid>img{height:260px}}\n'''
+              p = p.replace('</style>', css + '</style>', 1)
+              section = '''<section class="local-human-proof"><div class="wrap human-proof-grid"><img src="/assets/addison-seller-home.webp" alt="Local homeowner and real estate buyer outside a Greenville-area home" width="338" height="450" loading="lazy" decoding="async"><div><div class="eyebrow">REAL LOCAL BUYER</div><h2>Deal directly with a Greenville-based company.</h2><p>K Real Estate &amp; Investment LLC is based in Greenville and purchases properties directly throughout Pitt County. Your property is reviewed by the company considering the purchase, not handed off to an anonymous national call center.</p><div class="mini-founder"><img src="/assets/addison-hill-founder.webp" alt="K Real Estate and Investment representative" width="302" height="450" loading="lazy" decoding="async"><span>Local, direct and available to answer questions before you decide.</span></div></div></div></section>'''
+              marker = '<section class="proof">'
+              if marker not in p:
+                  raise SystemExit('PPC insertion marker not found')
+              p = p.replace(marker, section + marker, 1)
+              ppc.write_text(p)
+          PY
+      - name: Commit trust section
+        run: |
+          if git diff --quiet; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html lp/greenville-cash-offer.html
+          git commit -m 'Add founder bio and authentic local trust photos'
+          git push
