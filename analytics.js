@@ -229,6 +229,39 @@
     }catch(_e){}
   },{passive:true});
 
+
+  function kreiPopulateLeadForms(){
+    var params; try{params=new URLSearchParams(location.search||'');}catch(_e){params={get:function(){return '';}};}
+    var stored={}; try{stored=JSON.parse(sessionStorage.getItem('krei_paid_attribution')||'{}')||{};}catch(_e){}
+    var mapping={utm_source:'utmSource',utm_medium:'utmMedium',utm_campaign:'utmCampaign',utm_term:'utmTerm',utm_content:'utmContent',gclid:'gclid',gbraid:'gbraid',wbraid:'wbraid',fbclid:'fbclid'};
+    Object.keys(mapping).forEach(function(k){if(params.get(k))stored[k]=params.get(k);});
+    try{sessionStorage.setItem('krei_paid_attribution',JSON.stringify(stored));}catch(_e){}
+    document.querySelectorAll('form#lead-form,form[data-krei-lead-form]').forEach(function(f){
+      function set(name,value){var el=f.querySelector('[name="'+name+'"]');if(el&&!el.value)el.value=value||'';}
+      set('pageUrl',location.href);set('landingPage',location.pathname);set('referrer',document.referrer||'');set('formStartedAt',new Date().toISOString());
+      Object.keys(mapping).forEach(function(k){set(mapping[k],params.get(k)||stored[k]||'');});
+      var sid=f.querySelector('[name="submissionId"]'); if(sid&&!sid.value){try{sid.value=crypto.randomUUID();}catch(_e){sid.value='web-'+Date.now()+'-'+Math.random().toString(36).slice(2);}}
+    });
+  }
+
+  function kreiInjectSellerCapture(){
+    if(location.pathname==='/'||location.pathname.indexOf('/lp/')===0||location.pathname==='/thank-you.html'||document.getElementById('lead-form'))return;
+    var article=document.querySelector('article.article,.content .article'); if(!article)return;
+    var section=document.createElement('section');section.className='inline-lead';section.id='inline-offer';
+    section.innerHTML='<div class="inline-lead-inner"><div><span class="eyebrow">GET A LOCAL CASH OFFER</span><h2>Want us to review your property?</h2><p>Send the address and best number to reach you. We can gather the rest during follow-up.</p><div class="inline-rating"><span class="stars">★★★★★</span> <strong>5.0 on Google</strong> · 10 reviews</div></div><form data-krei-lead-form id="lead-form" method="POST" action="https://kbuyhouses-lead-relay.hillcrew-automations.workers.dev/lead" enctype="multipart/form-data"><input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><input type="hidden" name="source" value="Seller Resource Page"><input type="hidden" name="pageUrl"><input type="hidden" name="landingPage"><input type="hidden" name="referrer"><input type="hidden" name="formStartedAt"><input type="hidden" name="submissionId"><input type="hidden" name="utmSource"><input type="hidden" name="utmMedium"><input type="hidden" name="utmCampaign"><input type="hidden" name="utmTerm"><input type="hidden" name="utmContent"><input type="hidden" name="gclid"><input type="hidden" name="gbraid"><input type="hidden" name="wbraid"><input type="hidden" name="fbclid"><label>Property address<input id="property-address" name="propertyAddress" required autocomplete="street-address"></label><div class="inline-row"><label>First name<input name="firstName" required autocomplete="given-name"></label><label>Phone<input name="phone" type="tel" required autocomplete="tel"></label></div><button type="submit">Get My Cash Offer</button><details class="optional-details"><summary>Add optional details</summary><label>Email<input name="email" type="email" autocomplete="email"></label><label>Anything else?<textarea name="notes" rows="3"></textarea></label></details><small>No obligation. We review Greenville and Pitt County properties directly.</small></form></div>';
+    article.parentNode.insertBefore(section,article.nextSibling);
+  }
+
+  function kreiInjectMobileSticky(){
+    if(location.pathname==='/thank-you.html'||document.querySelector('.mobile-sticky-cta'))return;
+    var bar=document.createElement('div');bar.className='mobile-sticky-cta';bar.innerHTML='<a class="sticky-offer" href="'+(location.pathname.indexOf('/lp/')===0?'#get-offer':document.getElementById('lead-form')?'#lead-form':'/#get-offer')+'">Get Cash Offer</a><a class="sticky-call" href="tel:+12523593197">Call</a>';document.body.appendChild(bar);
+  }
+
+  kreiInjectSellerCapture();
+  kreiPopulateLeadForms();
+  kreiInjectMobileSticky();
+  kreiApplyDynamicPhoneNumber();
+
   var form=document.getElementById('lead-form');
   if(form){
     var started=false;
