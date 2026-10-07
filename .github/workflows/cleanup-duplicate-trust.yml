@@ -1,0 +1,53 @@
+name: Cleanup duplicate trust section
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/cleanup-duplicate-trust.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove superseded trust section and one-time workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          index_path = Path('index.html')
+          s = index_path.read_text()
+          s, css_count = re.subn(r'<style>\s*\.local-about\{.*?</style>', '', s, count=1, flags=re.S)
+          s, section_count = re.subn(r'<section class="section local-about" id="about-local-buyer">.*?</section>', '', s, count=1, flags=re.S)
+          if not css_count or not section_count:
+              raise SystemExit(f'Expected old homepage trust block not fully found: css={css_count}, section={section_count}')
+          index_path.write_text(s)
+
+          ppc_path = Path('lp/greenville-cash-offer.html')
+          p = ppc_path.read_text()
+          p, ppc_css_count = re.subn(r'\n\s*\.local-human-proof\{.*?@media\(max-width:700px\)\{\.human-proof-grid\{grid-template-columns:1fr\}\.human-proof-grid>img\{height:260px\}\}\n', '\n', p, count=1, flags=re.S)
+          p, ppc_section_count = re.subn(r'<section class="local-human-proof">.*?</section>', '', p, count=1, flags=re.S)
+          if not ppc_css_count or not ppc_section_count:
+              raise SystemExit(f'Expected old PPC trust block not fully found: css={ppc_css_count}, section={ppc_section_count}')
+          ppc_path.write_text(p)
+
+          Path('.github/workflows/add-local-trust-section.yml').unlink(missing_ok=True)
+          Path('.github/workflows/cleanup-duplicate-trust.yml').unlink(missing_ok=True)
+          PY
+      - name: Commit cleanup
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Remove duplicate local trust section'
+          git push
