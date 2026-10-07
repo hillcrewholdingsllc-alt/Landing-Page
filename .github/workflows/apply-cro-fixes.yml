@@ -1,0 +1,26 @@
+name: Apply KREI CRO fixes
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/apply_cro_fixes.py'
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply targeted website conversion fixes
+        run: python scripts/apply_cro_fixes.py
+      - name: Commit generated site changes
+        run: |
+          if git diff --quiet; then
+            echo 'No CRO changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html lp/greenville-cash-offer.html greenville-nc.html analytics.js site.css sitemap.xml
+          git commit -m 'Improve seller conversion funnel and standardize lead capture'
+          git push
