@@ -95,6 +95,7 @@
     consent.type = 'button';
     consent.className = 'hope-chat-consent';
     consent.textContent = 'Start text chat';
+    consent.hidden = true;
     const status = document.createElement('p');
     status.className = 'hope-chat-status';
     status.setAttribute('role', 'status');
@@ -125,6 +126,7 @@
         launcherTracked = true;
         track('chat_launcher_open', {chat_agent:'hope'});
       }
+      if (!chatStarted && !consent.disabled) consent.click();
       close.focus();
     });
 
@@ -278,8 +280,7 @@
         }
       } catch (_) {
         consent.disabled = false;
-        consent.textContent = 'Try chat again';
-        status.textContent = 'Chat is unavailable. You can still use the property request form or call the number on this page.';
+        status.textContent = 'Chat is unavailable. Close this panel and try again, or use the property request form or phone number on this page.';
       }
     });
   }
