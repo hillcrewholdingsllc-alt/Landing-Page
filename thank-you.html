@@ -25,6 +25,18 @@
           var result=await response.json();
           if(result.ok===true&&result.submissionId===submission&&/^[0-9a-f-]{36}$/i.test(result.conversionId||'')){
             window.kreiTrack('generate_lead',{form_name:'seller_lead',conversion_source:'verified_queue_receipt',submission_id:result.conversionId});
+            var chatAssisted=false,chatSubmission='';
+            try{
+              chatAssisted=sessionStorage.getItem('krei_chat_offer_prepared')==='1';
+              chatSubmission=sessionStorage.getItem('krei_chat_offer_submission_id')||'';
+            }catch(_e){}
+            if(chatAssisted&&chatSubmission===submission){
+              window.kreiTrack('chat_assisted_lead',{form_name:'seller_lead',conversion_source:'verified_queue_receipt',submission_id:result.conversionId,chat_agent:'hope'});
+              try{
+                sessionStorage.removeItem('krei_chat_offer_prepared');
+                sessionStorage.removeItem('krei_chat_offer_submission_id');
+              }catch(_e){}
+            }
           }
         }catch(_e){/* A failed receipt check must never become a lead conversion. */}
       });
