@@ -1,0 +1,33 @@
+name: Homepage attribution hotfix
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/homepage-attribution-hotfix.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add full attribution fields to homepage form
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old='<input type="hidden" name="pageUrl" id="page-url"><input type="hidden" name="referrer" id="referrer"><input type="hidden" name="formStartedAt" id="form-started-at">'
+          new='<input type="hidden" name="pageUrl" id="page-url"><input type="hidden" name="landingPage" id="landing-page"><input type="hidden" name="referrer" id="referrer"><input type="hidden" name="formStartedAt" id="form-started-at"><input type="hidden" name="submissionId" id="submission-id"><input type="hidden" name="utmSource" id="utm-source"><input type="hidden" name="utmMedium" id="utm-medium"><input type="hidden" name="utmCampaign" id="utm-campaign"><input type="hidden" name="utmTerm" id="utm-term"><input type="hidden" name="utmContent" id="utm-content"><input type="hidden" name="gclid" id="gclid"><input type="hidden" name="gbraid" id="gbraid"><input type="hidden" name="wbraid" id="wbraid"><input type="hidden" name="fbclid" id="fbclid">'
+          if old in s:
+              s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Commit attribution patch
+        run: |
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Preserve paid attribution on homepage leads'
+          git push
