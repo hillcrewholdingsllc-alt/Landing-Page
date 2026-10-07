@@ -239,9 +239,31 @@
           const button = document.createElement('button');
           button.type = 'button';
           button.textContent = text;
-          button.addEventListener('click', () => {
+          button.addEventListener('click', async () => {
             track('chat_quick_reply', {chat_agent:'hope', quick_reply:text});
-            widget.dispatchEvent(new CustomEvent('elevenlabs-agent:user-message', {detail:{message:text}}));
+            button.disabled = true;
+            status.textContent = 'Starting chat…';
+            const deadline = Date.now() + 4000;
+            let textarea = null;
+            while (Date.now() < deadline) {
+              textarea = widget.shadowRoot && widget.shadowRoot.querySelector('textarea[aria-label="Text message input"]');
+              if (textarea) break;
+              await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            if (!textarea) {
+              status.textContent = 'Chat is still loading. Please try again.';
+              button.disabled = false;
+              return;
+            }
+            const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+            if (setter && setter.set) setter.set.call(textarea, text);
+            else textarea.value = text;
+            textarea.dispatchEvent(new Event('input', {bubbles:true, composed:true}));
+            textarea.dispatchEvent(new Event('change', {bubbles:true, composed:true}));
+            textarea.focus();
+            await new Promise(resolve => requestAnimationFrame(resolve));
+            textarea.dispatchEvent(new KeyboardEvent('keydown', {key:'Enter', code:'Enter', bubbles:true, composed:true, cancelable:true}));
+            status.textContent = '';
             quickReplies.hidden = true;
           });
           quickReplies.append(button);
