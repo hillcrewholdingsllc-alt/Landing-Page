@@ -118,6 +118,31 @@
     close.addEventListener('click', hide);
     panel.addEventListener('keydown', e => { if (e.key === 'Escape') hide(); });
 
+    let chatStarted = false;
+    let chatStartNotified = false;
+    function notifyChatStarted() {
+      if (chatStartNotified) return;
+      chatStartNotified = true;
+      const body = {
+        event:'chat_started',
+        pagePath:location.pathname,
+        pageUrl:location.origin + location.pathname,
+        attribution:String(window.KREI_ATTRIBUTION_CHANNEL || 'direct_or_legacy'),
+        startedAt:new Date().toISOString()
+      };
+      const payload = new URLSearchParams(body);
+      try {
+        if (navigator.sendBeacon && navigator.sendBeacon(CHAT_START_WEBHOOK, payload)) return;
+      } catch (_) {}
+      fetch(CHAT_START_WEBHOOK, {
+        method:'POST',
+        mode:'no-cors',
+        credentials:'omit',
+        keepalive:true,
+        body:payload
+      }).catch(() => {});
+    }
+
     let launcherTracked = false;
     launcher.addEventListener('click', () => {
       panel.hidden = false;
@@ -126,7 +151,12 @@
         launcherTracked = true;
         track('chat_launcher_open', {chat_agent:'hope'});
       }
-      if (!chatStarted && !consent.disabled) consent.click();
+      if (!chatStarted) {
+        chatStarted = true;
+        track('chat_started', {chat_agent:'hope'});
+        notifyChatStarted();
+      }
+      if (!consent.disabled) consent.click();
       close.focus();
     });
 
@@ -143,7 +173,6 @@
     function prepareOfferRequest(args) {
       args = args || {};
       const firstPreparation = !prepared;
-      // The client tool never submits a form, starts outreach, or changes attribution.
       for (const [key, limit] of Object.entries({firstName:120, phone:60, propertyAddress:500, email:320})) {
         const field = form.elements.namedItem(key);
         const value = clean(args[key], limit);
@@ -157,7 +186,6 @@
       if (notes && summary && firstPreparation) {
         const existing = notes.value.trim();
         const addition = 'Website chat with Hope (visitor to review): ' + summary;
-        // Preserve the visitor's original notes and fit the relay's existing 2,000-character limit.
         if (existing.length + addition.length + 2 <= 2000) notes.value = [existing, addition].filter(Boolean).join('\n\n');
       }
       prepared = true;
@@ -186,27 +214,6 @@
       const field = form.querySelector('input[required]');
       if (field) field.focus({preventScroll:true});
       return JSON.stringify({status:'review_required', submitted:false, message:'Form is ready for visitor review. The visitor must submit it. No contact request or appointment has been created.'});
-    }
-
-    let chatStarted = false;
-    let chatStartNotified = false;
-    function notifyChatStarted() {
-      if (chatStartNotified) return;
-      chatStartNotified = true;
-      const body = {
-        event:'chat_started',
-        pagePath:location.pathname,
-        pageUrl:location.origin + location.pathname,
-        attribution:String(window.KREI_ATTRIBUTION_CHANNEL || 'direct_or_legacy'),
-        startedAt:new Date().toISOString()
-      };
-      fetch(CHAT_START_WEBHOOK, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        credentials:'omit',
-        keepalive:true,
-        body:JSON.stringify(body)
-      }).catch(() => {});
     }
 
     consent.addEventListener('click', async () => {
@@ -273,11 +280,6 @@
         quickReplies.hidden = false;
         consent.hidden = true;
         status.textContent = '';
-        if (!chatStarted) {
-          chatStarted = true;
-          track('chat_started', {chat_agent:'hope'});
-          notifyChatStarted();
-        }
       } catch (_) {
         consent.disabled = false;
         status.textContent = 'Chat is unavailable. Close this panel and try again, or use the property request form or phone number on this page.';
