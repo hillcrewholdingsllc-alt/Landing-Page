@@ -223,7 +223,7 @@
         if (!customElements.get('elevenlabs-convai')) {
           await new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed';
+            script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed@0.18.3';
             script.async = true;
             const timeout = setTimeout(() => reject(new Error('Chat load timeout')), 15000);
             script.onload = () => { clearTimeout(timeout); resolve(); };
@@ -234,7 +234,7 @@
         if (!customElements.get('elevenlabs-convai')) throw new Error('Chat unavailable');
         const widget = document.createElement('elevenlabs-convai');
         widget.setAttribute('agent-id', AGENT_ID);
-        widget.setAttribute('variant', 'expanded');
+        widget.setAttribute('variant', 'full');
         widget.setAttribute('dismissible', 'false');
         widget.setAttribute('allow-events', 'true');
         widget.setAttribute('markdown-link-allowed-hosts', 'kbuyhouses.com');
