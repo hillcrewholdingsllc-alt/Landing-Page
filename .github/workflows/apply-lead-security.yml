@@ -1,0 +1,42 @@
+name: Apply seller lead security
+
+on:
+  push:
+    paths:
+      - lead-security-trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire lead security into seller forms
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          files=[Path('index.html'),Path('lp/greenville-cash-offer.html')]
+          tag='<script src="/lead-security.js" defer></script>'
+          for p in files:
+              s=p.read_text()
+              if tag not in s:
+                  s=s.replace('</head>',tag+'</head>',1)
+              if p.name=='index.html':
+                  s=re.sub(r";\(async function\(\)\{try\{var r=await fetch\('https://kbuyhouses-lead-relay\.hillcrew-automations\.workers\.dev/turnstile-config'.*?\}\}\)\(\);",';',s,flags=re.S)
+              p.write_text(s)
+          PY
+      - name: Commit form protection
+        run: |
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add index.html lp/greenville-cash-offer.html
+            git commit -m 'Enable Turnstile on seller lead forms'
+            git push
+          else
+            echo 'Lead security already applied'
+          fi
