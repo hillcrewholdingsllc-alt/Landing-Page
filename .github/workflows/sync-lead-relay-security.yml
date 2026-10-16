@@ -1,0 +1,30 @@
+name: Sync lead relay security source
+
+on:
+  push:
+    paths:
+      - lead-relay-sync-trigger.txt
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply relay security patch
+        run: python cloudflare-lead-relay/apply_security_patch.py
+      - name: Validate Worker JavaScript
+        run: node --check cloudflare-lead-relay/src/index.js
+      - name: Commit synced Worker source
+        run: |
+          if ! git diff --quiet; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add cloudflare-lead-relay/src/index.js
+            git commit -m 'Sync lead relay Turnstile and dedupe source'
+            git push
+          else
+            echo 'Worker source already synchronized'
+          fi
