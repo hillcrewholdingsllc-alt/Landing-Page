@@ -17,6 +17,17 @@
     var match=document.cookie.match(new RegExp('(?:^|;\\s*)'+name.replace(/[.*+?^${}()|[\\]\\]/g,'\\$&')+'=([^;]*)'));
     return match?decodeURIComponent(match[1]):'';
   }
+  function safeParams(){
+    try{return new URLSearchParams(location.search || '');}
+    catch(_e){return {get:function(){return '';},has:function(){return false;}};}
+  }
+  function loadStoredAttribution(){
+    try{return JSON.parse(sessionStorage.getItem('krei_attribution') || '{}') || {};}
+    catch(_e){return {};}
+  }
+  function saveStoredAttribution(value){
+    try{sessionStorage.setItem('krei_attribution',JSON.stringify(value || {}));}catch(_e){}
+  }
   function baseParams(){
     return {
       page_path: location.pathname,
@@ -34,7 +45,135 @@
       window.dataLayer.push(Object.assign({event:name}, payload));
     }
   }
+
+  var KREI_PHONE_MAP = {
+    main: { channel:'direct_or_legacy', e164:'+12523593197', display:'(252) 359-3197' },
+    organic: { channel:'organic_search', e164:'+12528882210', display:'(252) 888-2210' },
+    google_ads: { channel:'google_ads_ppc', e164:'+12523041500', display:'(252) 304-1500' },
+    gbp: { channel:'google_business_profile', e164:'+12528887483', display:'(252) 888-7483' },
+    meta: { channel:'meta_paid_social', e164:'+12526686812', display:'(252) 668-6812' },
+    // ChatGPT is explicitly tracked now. Until a dedicated number is provisioned,
+    // it intentionally uses the main line so we do not contaminate another source pool.
+    chatgpt: { channel:'chatgpt_referral', e164:'+12523593197', display:'(252) 359-3197' }
+  };
+
+  function phoneKeyForChannel(channel){
+    var found='main';
+    Object.keys(KREI_PHONE_MAP).some(function(k){
+      if(KREI_PHONE_MAP[k].channel===channel){found=k;return true;}
+      return false;
+    });
+    return found;
+  }
+
+  function kreiDetectAttribution(){
+    var explicitChannel=cleanText(window.KREI_ATTRIBUTION_CHANNEL,80);
+    var explicitNumber=cleanText(window.KREI_TRACKING_NUMBER,30);
+    if(explicitChannel && explicitNumber){
+      var explicitKey=phoneKeyForChannel(explicitChannel);
+      var explicit=KREI_PHONE_MAP[explicitKey] || KREI_PHONE_MAP.main;
+      return {key:explicitKey,channel:explicitChannel,e164:explicitNumber,display:explicit.display};
+    }
+
+    var params=safeParams();
+    var source=cleanText(params.get('utm_source'),80).toLowerCase();
+    var medium=cleanText(params.get('utm_medium'),80).toLowerCase();
+    var refHost='';
+    try{ refHost=document.referrer ? new URL(document.referrer).hostname.toLowerCase() : ''; }catch(_e){}
+
+    if(params.has('gclid') || params.has('gbraid') || params.has('wbraid') ||
+       /^(cpc|ppc|paid_search|paidsearch)$/i.test(medium) ||
+       /^(google_ads|googleads|adwords)$/i.test(source)){
+      return Object.assign({key:'google_ads'},KREI_PHONE_MAP.google_ads);
+    }
+    if(/^(gmb|gbp|google_business|google_business_profile|googlebusiness)$/i.test(source)){
+      return Object.assign({key:'gbp'},KREI_PHONE_MAP.gbp);
+    }
+    if(params.has('fbclid') || /^(facebook|meta|instagram)$/i.test(source) ||
+       /^(paid_social|social_paid)$/i.test(medium)){
+      return Object.assign({key:'meta'},KREI_PHONE_MAP.meta);
+    }
+    if(/chatgpt|openai/.test(source) || /(^|\.)(chatgpt\.com|openai\.com)$/i.test(refHost)){
+      return Object.assign({key:'chatgpt'},KREI_PHONE_MAP.chatgpt);
+    }
+    if(refHost && !/(^|\.)kbuyhouses\.com$/i.test(refHost) &&
+       /(^|\.)(google\.|bing\.com$|search\.yahoo\.com$|duckduckgo\.com$|search\.brave\.com$)/i.test(refHost)){
+      return Object.assign({key:'organic'},KREI_PHONE_MAP.organic);
+    }
+
+    var stored=loadStoredAttribution();
+    if(stored.key && KREI_PHONE_MAP[stored.key]){
+      return Object.assign({key:stored.key},KREI_PHONE_MAP[stored.key]);
+    }
+    return Object.assign({key:'main'},KREI_PHONE_MAP.main);
+  }
+
+  function captureAttribution(selected){
+    var params=safeParams();
+    var current={
+      key:selected.key || phoneKeyForChannel(selected.channel),
+      channel:selected.channel,
+      trackingNumber:selected.e164,
+      firstLandingPage:location.pathname,
+      firstPageUrl:location.href,
+      referrer:document.referrer || '',
+      utmSource:cleanText(params.get('utm_source'),300),
+      utmMedium:cleanText(params.get('utm_medium'),300),
+      utmCampaign:cleanText(params.get('utm_campaign'),500),
+      utmTerm:cleanText(params.get('utm_term'),500),
+      utmContent:cleanText(params.get('utm_content'),500),
+      gclid:cleanText(params.get('gclid'),1000),
+      gbraid:cleanText(params.get('gbraid'),1000),
+      wbraid:cleanText(params.get('wbraid'),1000),
+      fbclid:cleanText(params.get('fbclid'),1000),
+      capturedAt:new Date().toISOString()
+    };
+    var previous=loadStoredAttribution();
+    if(previous && previous.capturedAt){
+      Object.keys(current).forEach(function(k){
+        if(!current[k] && previous[k]) current[k]=previous[k];
+      });
+      if(previous.firstLandingPage) current.firstLandingPage=previous.firstLandingPage;
+      if(previous.firstPageUrl) current.firstPageUrl=previous.firstPageUrl;
+      if(previous.capturedAt) current.capturedAt=previous.capturedAt;
+      if(previous.key && selected.key==='main'){
+        current.key=previous.key;
+        current.channel=(KREI_PHONE_MAP[previous.key]||KREI_PHONE_MAP.main).channel;
+        current.trackingNumber=(KREI_PHONE_MAP[previous.key]||KREI_PHONE_MAP.main).e164;
+      }
+    }
+    saveStoredAttribution(current);
+    return current;
+  }
+
+  function kreiApplyDynamicPhoneNumber(){
+    var selected=kreiDetectAttribution();
+    var stored=captureAttribution(selected);
+    if(stored.key && KREI_PHONE_MAP[stored.key]) selected=Object.assign({key:stored.key},KREI_PHONE_MAP[stored.key]);
+
+    window.KREI_ATTRIBUTION_CHANNEL=selected.channel;
+    window.KREI_TRACKING_NUMBER=selected.e164;
+
+    document.querySelectorAll('a[href^="tel:"]').forEach(function(a){
+      var raw=(a.getAttribute('href')||'').replace(/\D/g,'');
+      if(raw==='12523593197'){
+        a.setAttribute('href','tel:'+selected.e164);
+        a.textContent=(a.textContent||'').replace(/\(252\)\s*359-3197/g,selected.display);
+      }
+    });
+  }
+
+  function isGoogleAdsAttribution(){
+    var channel=String(window.KREI_ATTRIBUTION_CHANNEL || '');
+    if(channel==='google_ads_ppc') return true;
+    var params=safeParams();
+    if(params.has('gclid') || params.has('gbraid') || params.has('wbraid')) return true;
+    var stored=loadStoredAttribution();
+    return stored.key==='google_ads' || !!(stored.gclid || stored.gbraid || stored.wbraid);
+  }
+
   function trackGoogleAdsLeadConversion(submissionId){
+    if(!isGoogleAdsAttribution()) return;
     if(adsLeadConversionFired || typeof window.gtag !== 'function') return;
     if(!/^AW-\d+$/i.test(GOOGLE_ADS_ID)) return;
     if(!/^[A-Za-z0-9_-]+$/.test(GOOGLE_ADS_CONVERSION_LABEL)) return;
@@ -50,6 +189,7 @@
       adsLeadConversionFired = false;
     }
   }
+
   window.kreiGetAnalyticsIdentity = function(timeoutMs){
     timeoutMs = Math.max(250, Math.min(2000, Number(timeoutMs || 900)));
     return new Promise(function(resolve){
@@ -70,81 +210,6 @@
       try{ window.gtag('get', GA4_ID, 'session_id', function(v){ setField('gaSessionId',v); }); }catch(_e){ setField('gaSessionId',''); }
     });
   };
-
-  var KREI_PHONE_MAP = {
-    main: { channel:'direct_or_legacy', e164:'+12523593197', display:'(252) 359-3197' },
-    organic: { channel:'organic_search', e164:'+12528882210', display:'(252) 888-2210' },
-    google_ads: { channel:'google_ads_ppc', e164:'+12523041500', display:'(252) 304-1500' },
-    gbp: { channel:'google_business_profile', e164:'+12528887483', display:'(252) 888-7483' },
-    meta: { channel:'meta_paid_social', e164:'+12526686812', display:'(252) 668-6812' }
-  };
-
-  function kreiDetectAttribution(){
-    var explicitChannel=cleanText(window.KREI_ATTRIBUTION_CHANNEL,80);
-    var explicitNumber=cleanText(window.KREI_TRACKING_NUMBER,30);
-    if(explicitChannel && explicitNumber){
-      return {channel:explicitChannel,e164:explicitNumber,display:
-        explicitNumber==='+12523041500'?'(252) 304-1500':
-        explicitNumber==='+12528882210'?'(252) 888-2210':
-        explicitNumber==='+12528887483'?'(252) 888-7483':
-        explicitNumber==='+12526686812'?'(252) 668-6812':
-        '(252) 359-3197'};
-    }
-    var params;
-    try{ params=new URLSearchParams(location.search || ''); }catch(_e){ params={get:function(){return '';},has:function(){return false;}}; }
-    var source=cleanText(params.get('utm_source'),80).toLowerCase();
-    var medium=cleanText(params.get('utm_medium'),80).toLowerCase();
-
-    if(params.has('gclid') || params.has('gbraid') || params.has('wbraid') ||
-       /^(cpc|ppc|paid_search|paidsearch)$/i.test(medium) ||
-       /^(google_ads|googleads|adwords)$/i.test(source)){
-      return KREI_PHONE_MAP.google_ads;
-    }
-    if(/^(gmb|gbp|google_business|google_business_profile|googlebusiness)$/i.test(source)){
-      return KREI_PHONE_MAP.gbp;
-    }
-    if(params.has('fbclid') || /^(facebook|meta|instagram)$/i.test(source) ||
-       /^(paid_social|social_paid)$/i.test(medium)){
-      return KREI_PHONE_MAP.meta;
-    }
-
-    var refHost='';
-    try{ refHost=document.referrer ? new URL(document.referrer).hostname.toLowerCase() : ''; }catch(_e){}
-    if(refHost && !/(^|\.)kbuyhouses\.com$/i.test(refHost) &&
-       /(^|\.)(google\.|bing\.com$|search\.yahoo\.com$|duckduckgo\.com$|search\.brave\.com$)/i.test(refHost)){
-      return KREI_PHONE_MAP.organic;
-    }
-
-    try{
-      var saved=sessionStorage.getItem('krei_attribution_channel');
-      if(saved && KREI_PHONE_MAP[saved]) return KREI_PHONE_MAP[saved];
-    }catch(_e){}
-
-    return KREI_PHONE_MAP.main;
-  }
-
-  function kreiApplyDynamicPhoneNumber(){
-    var selected=kreiDetectAttribution();
-    var key='main';
-    Object.keys(KREI_PHONE_MAP).some(function(k){
-      if(KREI_PHONE_MAP[k].channel===selected.channel){ key=k; return true; }
-      return false;
-    });
-
-    window.KREI_ATTRIBUTION_CHANNEL=selected.channel;
-    window.KREI_TRACKING_NUMBER=selected.e164;
-    try{
-      if(key!=='main') sessionStorage.setItem('krei_attribution_channel',key);
-    }catch(_e){}
-
-    document.querySelectorAll('a[href^="tel:"]').forEach(function(a){
-      var raw=(a.getAttribute('href')||'').replace(/\D/g,'');
-      if(raw==='12523593197'){
-        a.setAttribute('href','tel:'+selected.e164);
-        a.textContent=(a.textContent||'').replace(/\(252\)\s*359-3197/g,selected.display);
-      }
-    });
-  }
 
   kreiApplyDynamicPhoneNumber();
 
@@ -204,7 +269,7 @@
     var text=cleanText(a.textContent,80);
 
     if(href.indexOf('tel:')===0){
-      track('phone_click',{link_text:text});
+      track('phone_click',{link_text:text,attribution_channel:String(window.KREI_ATTRIBUTION_CHANNEL||''),tracking_number:String(window.KREI_TRACKING_NUMBER||'')});
       return;
     }
     if(href.indexOf('mailto:')===0){
@@ -229,18 +294,33 @@
     }catch(_e){}
   },{passive:true});
 
-
   function kreiPopulateLeadForms(){
-    var params; try{params=new URLSearchParams(location.search||'');}catch(_e){params={get:function(){return '';}};}
-    var stored={}; try{stored=JSON.parse(sessionStorage.getItem('krei_paid_attribution')||'{}')||{};}catch(_e){}
+    var params=safeParams();
+    var storedPaid={};
+    try{storedPaid=JSON.parse(sessionStorage.getItem('krei_paid_attribution')||'{}')||{};}catch(_e){}
     var mapping={utm_source:'utmSource',utm_medium:'utmMedium',utm_campaign:'utmCampaign',utm_term:'utmTerm',utm_content:'utmContent',gclid:'gclid',gbraid:'gbraid',wbraid:'wbraid',fbclid:'fbclid'};
-    Object.keys(mapping).forEach(function(k){if(params.get(k))stored[k]=params.get(k);});
-    try{sessionStorage.setItem('krei_paid_attribution',JSON.stringify(stored));}catch(_e){}
+    Object.keys(mapping).forEach(function(k){if(params.get(k))storedPaid[k]=params.get(k);});
+    try{sessionStorage.setItem('krei_paid_attribution',JSON.stringify(storedPaid));}catch(_e){}
+    var attribution=loadStoredAttribution();
+
     document.querySelectorAll('form#lead-form,form[data-krei-lead-form]').forEach(function(f){
-      function set(name,value){var el=f.querySelector('[name="'+name+'"]');if(el&&!el.value)el.value=value||'';}
-      set('pageUrl',location.href);set('landingPage',location.pathname);set('referrer',document.referrer||'');set('formStartedAt',new Date().toISOString());
-      Object.keys(mapping).forEach(function(k){set(mapping[k],params.get(k)||stored[k]||'');});
-      var sid=f.querySelector('[name="submissionId"]'); if(sid&&!sid.value){try{sid.value=crypto.randomUUID();}catch(_e){sid.value='web-'+Date.now()+'-'+Math.random().toString(36).slice(2);}}
+      function ensure(name){
+        var el=f.querySelector('[name="'+name+'"]');
+        if(!el){el=document.createElement('input');el.type='hidden';el.name=name;f.appendChild(el);}
+        return el;
+      }
+      function set(name,value){var el=ensure(name);if(!el.value)el.value=value||'';}
+      set('pageUrl',location.href);
+      set('landingPage',location.pathname);
+      set('referrer',document.referrer||'');
+      set('formStartedAt',new Date().toISOString());
+      set('attributionChannel',String(window.KREI_ATTRIBUTION_CHANNEL||attribution.channel||''));
+      set('trackingNumber',String(window.KREI_TRACKING_NUMBER||attribution.trackingNumber||''));
+      set('firstLandingPage',attribution.firstLandingPage||location.pathname);
+      set('firstPageUrl',attribution.firstPageUrl||location.href);
+      Object.keys(mapping).forEach(function(k){set(mapping[k],params.get(k)||storedPaid[k]||attribution[mapping[k]]||'');});
+      var sid=ensure('submissionId');
+      if(!sid.value){try{sid.value=crypto.randomUUID();}catch(_e){sid.value='web-'+Date.now()+'-'+Math.random().toString(36).slice(2);}}
     });
   }
 
@@ -248,7 +328,7 @@
     if(location.pathname==='/'||location.pathname.indexOf('/lp/')===0||location.pathname==='/thank-you.html'||document.getElementById('lead-form'))return;
     var article=document.querySelector('article.article,.content .article'); if(!article)return;
     var section=document.createElement('section');section.className='inline-lead';section.id='inline-offer';
-    section.innerHTML='<div class="inline-lead-inner"><div><span class="eyebrow">GET A LOCAL CASH OFFER</span><h2>Want us to review your property?</h2><p>Send the address and best number to reach you. We can gather the rest during follow-up.</p><div class="inline-rating"><span class="stars">★★★★★</span> <strong>5.0 on Google</strong> · 10 reviews</div></div><form data-krei-lead-form id="lead-form" method="POST" action="https://kbuyhouses-lead-relay.hillcrew-automations.workers.dev/lead" enctype="multipart/form-data"><input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><input type="hidden" name="source" value="Seller Resource Page"><input type="hidden" name="pageUrl"><input type="hidden" name="landingPage"><input type="hidden" name="referrer"><input type="hidden" name="formStartedAt"><input type="hidden" name="submissionId"><input type="hidden" name="utmSource"><input type="hidden" name="utmMedium"><input type="hidden" name="utmCampaign"><input type="hidden" name="utmTerm"><input type="hidden" name="utmContent"><input type="hidden" name="gclid"><input type="hidden" name="gbraid"><input type="hidden" name="wbraid"><input type="hidden" name="fbclid"><label>Property address<input id="property-address" name="propertyAddress" required autocomplete="street-address"></label><div class="inline-row"><label>First name<input name="firstName" required autocomplete="given-name"></label><label>Phone<input name="phone" type="tel" required autocomplete="tel"></label></div><button type="submit">Get My Cash Offer</button><details class="optional-details"><summary>Add optional details</summary><label>Email<input name="email" type="email" autocomplete="email"></label><label>Anything else?<textarea name="notes" rows="3"></textarea></label></details><small>No obligation. We review Greenville and Pitt County properties directly.</small></form></div>';
+    section.innerHTML='<div class="inline-lead-inner"><div><span class="eyebrow">GET A LOCAL CASH OFFER</span><h2>Want us to review your property?</h2><p>Send the address and best number to reach you. We can gather the rest during follow-up.</p><div class="inline-rating"><span class="stars">★★★★★</span> <strong>5.0 on Google</strong> · 10 reviews</div></div><form data-krei-lead-form id="lead-form" method="POST" action="https://kbuyhouses-lead-relay.hillcrew-automations.workers.dev/lead" enctype="multipart/form-data"><input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><input type="hidden" name="source" value="Seller Resource Page"><input type="hidden" name="pageUrl"><input type="hidden" name="landingPage"><input type="hidden" name="referrer"><input type="hidden" name="formStartedAt"><input type="hidden" name="submissionId"><input type="hidden" name="attributionChannel"><input type="hidden" name="trackingNumber"><input type="hidden" name="firstLandingPage"><input type="hidden" name="firstPageUrl"><input type="hidden" name="utmSource"><input type="hidden" name="utmMedium"><input type="hidden" name="utmCampaign"><input type="hidden" name="utmTerm"><input type="hidden" name="utmContent"><input type="hidden" name="gclid"><input type="hidden" name="gbraid"><input type="hidden" name="wbraid"><input type="hidden" name="fbclid"><label>Property address<input id="property-address" name="propertyAddress" required autocomplete="street-address"></label><div class="inline-row"><label>First name<input name="firstName" required autocomplete="given-name"></label><label>Phone<input name="phone" type="tel" required autocomplete="tel"></label></div><button type="submit">Get My Cash Offer</button><details class="optional-details"><summary>Add optional details</summary><label>Email<input name="email" type="email" autocomplete="email"></label><label>Anything else?<textarea name="notes" rows="3"></textarea></label></details><small>No obligation. We review Greenville and Pitt County properties directly.</small></form></div>';
     article.parentNode.insertBefore(section,article.nextSibling);
   }
 
@@ -261,6 +341,7 @@
   kreiPopulateLeadForms();
   kreiInjectMobileSticky();
   kreiApplyDynamicPhoneNumber();
+  kreiPopulateLeadForms();
 
   var form=document.getElementById('lead-form');
   if(form){
@@ -301,4 +382,3 @@
   window.addEventListener('scroll',onScroll,{passive:true});
 
 })();
-
